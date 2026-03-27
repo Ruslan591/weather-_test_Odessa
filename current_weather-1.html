@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Текущая погода</title>
+<link rel="stylesheet" href="current_weather.css">
+</head>
+<body>
+
+<!-- =========================
+     ВЕРХНЯЯ ПАНЕЛЬ
+========================= -->
+<div class="header">
+    <div class="headerTitle">Погода сейчас</div>
+    <div class="nav">
+        <a href="forecast.html">Прогноз</a>
+        <a href="index.html">Рейтинг</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- =========================
+         КНОПКИ SYNOP
+    ========================= -->
+    <div class="card">
+        <div class="btnRow">
+            <button id="btnSynop" onclick="loadSynopUI()">Обновить SYNOP</button>
+        </div>
+    </div>
+
+    <!-- =========================
+         LOG SYNOP
+    ========================= -->
+    <div id="synopLogBox" class="card logBox hidden">
+        <div class="cardTitle">Загрузка SYNOP</div>
+        <div id="synopLog"></div>
+    </div>
+
+    <!-- =========================
+         ОСНОВНАЯ КАРТОЧКА SYNOP
+    ========================= -->
+    <div id="main" class="card">
+        Загрузка SYNOP...
+    </div>
+
+    <!-- =========================
+         LOG РАЙОНОВ
+    ========================= -->
+    <div id="districtsLogBox" class="card logBox hidden">
+        <div class="cardTitle">Загрузка районов</div>
+        <div id="districtsLog"></div>
+    </div>
+
+    <!-- =========================
+         КНОПКИ РАЙОНОВ
+    ========================= -->
+    <div class="card">
+        <div class="btnRow">
+            <button id="btnDistricts" onclick="loadDistrictsUI()">Обновить районы</button>
+        </div>
+    </div>
+
+    <!-- =========================
+         РАЙОНЫ
+    ========================= -->
+    <div id="districts" class="card">
+        Загрузка районов...
+    </div>
+
+</div>
+
+<!-- Порядок важен: utils → indicators → synop → districts → main -->
+<script src="utils.js"></script>
+<script src="indicators.js"></script>
+<script src="synop.js"></script>
+<script src="districts.js"></script>
+<script src="main.js"></script>
+
+</body>
+</html>
