@@ -213,12 +213,12 @@ a{
 
 /* Каждый индикатор — отдельная позиция на ширину экрана */
 .ind-card{
-    /* Ширина = 100% контейнера — скролл покажет по одному */
     flex:0 0 100%;
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding:10px 0 6px;
+    justify-content:center;
+    padding:8px 0 4px;
     border-right:1px solid #2e2e2e;
     scroll-snap-align:start;
 }
@@ -226,23 +226,23 @@ a{
     border-right:none;
 }
 .ind-title{
-    margin-bottom:4px;
+    margin-bottom:2px;
     text-align:center;
-    font-size:11px;
+    font-size:12px;
     color:#aaa;
     letter-spacing:0.03em;
 }
 .ind-sub{
-    margin-top:4px;
+    margin-top:2px;
     text-align:center;
-    font-size:11px;
+    font-size:12px;
     color:#888;
 }
 .ind-trend{
     display:flex;
     align-items:center;
-    gap:6px;
-    margin-top:6px;
+    gap:8px;
+    margin-top:4px;
 }
 
 /* Прокрутка с прилипанием */

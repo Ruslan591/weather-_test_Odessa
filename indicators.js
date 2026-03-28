@@ -1,6 +1,7 @@
 /* =========================================================
    INDICATORS.JS — SVG индикаторы
    Зависит от: utils.js
+   Единый viewBox: 0 0 160 130 для всех трёх
 ========================================================= */
 
 /* -------------------------
@@ -14,37 +15,41 @@ function windIndicatorSvg(d){
         d.windSpeed <= 9    ? "#ffd166" :
         d.windSpeed <= 14   ? "#ff9f5c" :
                               "#ff6b6b";
-
     const dir = d.windDir != null ? d.windDir : 0;
 
     return `
     <div class="ind-card">
         <div class="small ind-title">Ветер</div>
-        <svg viewBox="0 0 100 100" width="130" height="130" aria-label="Ветер">
-            <line x1="50" y1="12" x2="50" y2="18" stroke="currentColor" stroke-opacity="0.55" stroke-width="2"/>
-            <line x1="72.6" y1="18.1" x2="69.6" y2="23.3" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.6"/>
-            <line x1="81.9" y1="27.4" x2="76.7" y2="30.4" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.6"/>
-            <line x1="88" y1="50" x2="82" y2="50" stroke="currentColor" stroke-opacity="0.55" stroke-width="2"/>
-            <line x1="81.9" y1="72.6" x2="76.7" y2="69.6" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.6"/>
-            <line x1="72.6" y1="81.9" x2="69.6" y2="76.7" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.6"/>
-            <line x1="50" y1="88" x2="50" y2="82" stroke="currentColor" stroke-opacity="0.55" stroke-width="2"/>
-            <line x1="27.4" y1="81.9" x2="30.4" y2="76.7" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.6"/>
-            <line x1="18.1" y1="72.6" x2="23.3" y2="69.6" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.6"/>
-            <line x1="12" y1="50" x2="18" y2="50" stroke="currentColor" stroke-opacity="0.55" stroke-width="2"/>
-            <line x1="18.1" y1="27.4" x2="23.3" y2="30.4" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.6"/>
-            <line x1="27.4" y1="18.1" x2="30.4" y2="23.3" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.6"/>
-            <text x="50" y="9"    text-anchor="middle" font-size="7.5" fill="currentColor" fill-opacity="0.8">С</text>
-            <text x="91" y="52.5" text-anchor="middle" font-size="7.5" fill="currentColor" fill-opacity="0.8">В</text>
-            <text x="50" y="96"   text-anchor="middle" font-size="7.5" fill="currentColor" fill-opacity="0.8">Ю</text>
-            <text x="9"  y="52.5" text-anchor="middle" font-size="7.5" fill="currentColor" fill-opacity="0.8">З</text>
-            <circle cx="50" cy="50" r="31" fill="none" stroke="${color}" stroke-opacity="0.75" stroke-width="3"/>
-            <g transform="rotate(${dir} 50 50)">
-                <polygon points="50,16 45,26 55,26" fill="currentColor"/>
+        <svg viewBox="0 0 160 130" width="190" height="154" aria-label="Ветер">
+            <!-- Деления по кругу (роза перемасштабирована под cx=80,cy=65,r=50) -->
+            <line x1="80" y1="13" x2="80" y2="21" stroke="currentColor" stroke-opacity="0.55" stroke-width="2.2"/>
+            <line x1="107.3" y1="20.8" x2="103.7" y2="27" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.8"/>
+            <line x1="118.4" y1="37.7" x2="112.3" y2="41.2" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.8"/>
+            <line x1="130" y1="65" x2="122" y2="65" stroke="currentColor" stroke-opacity="0.55" stroke-width="2.2"/>
+            <line x1="118.4" y1="92.3" x2="112.3" y2="88.8" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.8"/>
+            <line x1="107.3" y1="109.2" x2="103.7" y2="103" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.8"/>
+            <line x1="80" y1="117" x2="80" y2="109" stroke="currentColor" stroke-opacity="0.55" stroke-width="2.2"/>
+            <line x1="52.7" y1="109.2" x2="56.3" y2="103" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.8"/>
+            <line x1="41.6" y1="92.3" x2="47.7" y2="88.8" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.8"/>
+            <line x1="30" y1="65" x2="38" y2="65" stroke="currentColor" stroke-opacity="0.55" stroke-width="2.2"/>
+            <line x1="41.6" y1="37.7" x2="47.7" y2="41.2" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.8"/>
+            <line x1="52.7" y1="20.8" x2="56.3" y2="27" stroke="currentColor" stroke-opacity="0.32" stroke-width="1.8"/>
+            <!-- Стороны света -->
+            <text x="80"  y="10"  text-anchor="middle" font-size="9" fill="currentColor" fill-opacity="0.8">С</text>
+            <text x="153" y="68"  text-anchor="middle" font-size="9" fill="currentColor" fill-opacity="0.8">В</text>
+            <text x="80"  y="126" text-anchor="middle" font-size="9" fill="currentColor" fill-opacity="0.8">Ю</text>
+            <text x="7"   y="68"  text-anchor="middle" font-size="9" fill="currentColor" fill-opacity="0.8">З</text>
+            <!-- Цветное кольцо cx=80,cy=65,r=40 -->
+            <circle cx="80" cy="65" r="40" fill="none" stroke="${color}" stroke-opacity="0.75" stroke-width="3.5"/>
+            <!-- Стрелка -->
+            <g transform="rotate(${dir} 80 65)">
+                <polygon points="80,22 74,35 86,35" fill="currentColor"/>
             </g>
-            <text x="50" y="53" text-anchor="middle" font-size="18" font-weight="800" fill="currentColor">
+            <!-- Скорость -->
+            <text x="80" y="69" text-anchor="middle" font-size="22" font-weight="800" fill="currentColor">
                 ${d.windSpeed != null ? d.windSpeed : "-"}
             </text>
-            <text x="50" y="64" text-anchor="middle" font-size="8.5" fill="currentColor" fill-opacity="0.72">м/с</text>
+            <text x="80" y="81" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.72">м/с</text>
         </svg>
         <div class="small ind-sub">
             ${escapeHtml(degToText(d.windDir))}${d.windDir != null ? ` · ${d.windDir}°` : ""}
@@ -61,7 +66,6 @@ function pressureIndicatorSvg(d){
     const pClamped = pVal != null ? Math.max(pMin, Math.min(pMax, pVal)) : null;
     const angle    = pClamped != null ? (pClamped - 1010) / 30 * 90 : 0;
 
-    // Цвет значения: норма ~1013 гПа
     const valColor = pVal == null   ? "#aaa"
         : pVal < 1000 ? "#58aeff"
         : pVal < 1025 ? "#5fe08f"
@@ -69,15 +73,15 @@ function pressureIndicatorSvg(d){
         : "#ff8f43";
 
     const trendPaths = {
-        "0":"M0,10 L10,8 L20,6 L30,4 L40,2",
-        "1":"M0,11 L10,9 L20,7 L30,4 L40,1",
-        "2":"M0,10 L10,7 L20,4 L30,3 L40,3",
-        "3":"M0,2 L10,4 L20,7 L30,9 L40,11",
-        "4":"M0,6 L10,6 L20,6 L30,6 L40,6",
-        "5":"M0,9 L10,8 L20,7 L30,6 L40,6",
-        "6":"M0,2 L10,5 L20,8 L30,10 L40,11",
-        "7":"M0,2 L10,4 L20,7 L30,9 L40,11",
-        "8":"M0,5 L10,5 L20,6 L30,9 L40,11"
+        "0":"M0,10 L12,8 L24,6 L36,4 L48,2",
+        "1":"M0,11 L12,9 L24,7 L36,4 L48,1",
+        "2":"M0,10 L12,7 L24,4 L36,3 L48,3",
+        "3":"M0,2 L12,4 L24,7 L36,9 L48,11",
+        "4":"M0,6 L12,6 L24,6 L36,6 L48,6",
+        "5":"M0,9 L12,8 L24,7 L36,6 L48,6",
+        "6":"M0,2 L12,5 L24,8 L36,10 L48,11",
+        "7":"M0,2 L12,4 L24,7 L36,9 L48,11",
+        "8":"M0,5 L12,5 L24,6 L36,9 L48,11"
     };
     const trendPath  = d.tendencyCode != null ? (trendPaths[String(d.tendencyCode)] || null) : null;
     const trendSign  = d.tendencyValue != null
@@ -88,11 +92,8 @@ function pressureIndicatorSvg(d){
     return `
     <div class="ind-card">
         <div class="small ind-title">Давление</div>
-        <svg viewBox="0 0 130 90" width="150" height="104" aria-label="Давление" style="overflow:visible;">
+        <svg viewBox="0 0 160 130" width="190" height="154" aria-label="Давление" style="overflow:visible;">
             <defs>
-                <!-- Плавный градиент: норма 1013 гПа = ~55% дуги
-                     980=0%  синий → 1000=33% голубой → 1013=55% зелёный
-                     → 1025=75% жёлто-зелёный → 1035=92% оранжевый → 1040=100% -->
                 <linearGradient id="pArcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%"   stop-color="#3a8fff"/>
                     <stop offset="33%"  stop-color="#72c8ff"/>
@@ -106,49 +107,54 @@ function pressureIndicatorSvg(d){
                     <stop offset="100%" stop-color="${valColor}" stop-opacity="0.5"/>
                 </linearGradient>
             </defs>
-            <path d="M 15.0 65.0 A 50 50 0 0 1 115.0 65.0"
+            <!-- Дуга: центр (80,90), r=65 -->
+            <path d="M 15.0 90.0 A 65 65 0 0 1 145.0 90.0"
                   fill="none" stroke="currentColor" stroke-opacity="0.10"
-                  stroke-width="7" stroke-linecap="round"/>
-            <path d="M 15.0 65.0 A 50 50 0 0 1 115.0 65.0"
+                  stroke-width="8" stroke-linecap="round"/>
+            <path d="M 15.0 90.0 A 65 65 0 0 1 145.0 90.0"
                   fill="none" stroke="url(#pArcGrad)"
-                  stroke-width="6" stroke-linecap="round"/>
-            <line x1="15.0" y1="65.0" x2="23.0" y2="65.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
-            <line x1="21.7" y1="40.0" x2="28.6" y2="44.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
-            <line x1="40.0" y1="21.7" x2="44.0" y2="28.6" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
-            <line x1="65.0" y1="15.0" x2="65.0" y2="23.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
-            <line x1="90.0" y1="21.7" x2="86.0" y2="28.6" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
-            <line x1="108.3" y1="40.0" x2="101.4" y2="44.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
-            <line x1="115.0" y1="65.0" x2="107.0" y2="65.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
-            <line x1="16.7" y1="52.1" x2="21.5" y2="53.4" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.1" stroke-linecap="round"/>
-            <line x1="29.6" y1="29.6" x2="33.2" y2="33.2" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.1" stroke-linecap="round"/>
-            <line x1="52.1" y1="16.7" x2="53.4" y2="21.5" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.1" stroke-linecap="round"/>
-            <line x1="77.9" y1="16.7" x2="76.6" y2="21.5" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.1" stroke-linecap="round"/>
-            <line x1="100.4" y1="29.6" x2="96.8" y2="33.2" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.1" stroke-linecap="round"/>
-            <line x1="113.3" y1="52.1" x2="108.5" y2="53.4" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.1" stroke-linecap="round"/>
-            <text x="1.0"   y="66.0" text-anchor="end"    font-size="6.2" fill="currentColor" fill-opacity="0.68">980</text>
-            <text x="11.3"  y="35.0" text-anchor="end"    font-size="6.2" fill="currentColor" fill-opacity="0.68">990</text>
-            <text x="34.0"  y="12.3" text-anchor="middle" font-size="6.2" fill="currentColor" fill-opacity="0.68">1000</text>
-            <text x="65.0"  y="4.0"  text-anchor="middle" font-size="6.2" fill="currentColor" fill-opacity="0.68">1010</text>
-            <text x="96.0"  y="12.3" text-anchor="middle" font-size="6.2" fill="currentColor" fill-opacity="0.68">1020</text>
-            <text x="118.7" y="35.0" text-anchor="start"  font-size="6.2" fill="currentColor" fill-opacity="0.68">1030</text>
-            <text x="129.0" y="66.0" text-anchor="start"  font-size="6.2" fill="currentColor" fill-opacity="0.68">1040</text>
-            <g transform="rotate(${angle} 65 65)">
-                <polygon points="65,21 60,33 70,33" fill="currentColor" opacity="0.90"/>
+                  stroke-width="7" stroke-linecap="round"/>
+            <!-- Деления и подписи -->
+            <line x1="15.0" y1="90.0" x2="25.0" y2="90.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+            <line x1="23.7" y1="57.5" x2="32.4" y2="62.5" stroke="currentColor" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+            <line x1="47.5" y1="33.7" x2="52.5" y2="42.4" stroke="currentColor" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+            <line x1="80.0" y1="25.0" x2="80.0" y2="35.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+            <line x1="112.5" y1="33.7" x2="107.5" y2="42.4" stroke="currentColor" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+            <line x1="136.3" y1="57.5" x2="127.6" y2="62.5" stroke="currentColor" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+            <line x1="145.0" y1="90.0" x2="135.0" y2="90.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+            <line x1="17.2" y1="73.2" x2="23.0" y2="74.7" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="34.0" y1="44.0" x2="38.3" y2="48.3" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="63.2" y1="27.2" x2="64.7" y2="33.0" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="96.8" y1="27.2" x2="95.3" y2="33.0" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="126.0" y1="44.0" x2="121.7" y2="48.3" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="142.8" y1="73.2" x2="137.0" y2="74.7" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.2" stroke-linecap="round"/>
+            <text x="0.0" y="91.5" text-anchor="end" font-size="7.5" fill="currentColor" fill-opacity="0.65">980</text>
+            <text x="10.7" y="51.5" text-anchor="end" font-size="7.5" fill="currentColor" fill-opacity="0.65">990</text>
+            <text x="40.0" y="22.2" text-anchor="middle" font-size="7.5" fill="currentColor" fill-opacity="0.65">1000</text>
+            <text x="80.0" y="11.5" text-anchor="middle" font-size="7.5" fill="currentColor" fill-opacity="0.65">1010</text>
+            <text x="120.0" y="22.2" text-anchor="middle" font-size="7.5" fill="currentColor" fill-opacity="0.65">1020</text>
+            <text x="149.3" y="51.5" text-anchor="start" font-size="7.5" fill="currentColor" fill-opacity="0.65">1030</text>
+            <text x="160.0" y="91.5" text-anchor="start" font-size="7.5" fill="currentColor" fill-opacity="0.65">1040</text>
+            <!-- Стрелка: вращается вокруг (80,90) -->
+            <g transform="rotate(${angle} 80 90)">
+                <polygon points="80,33 73,47 87,47"
+                         fill="currentColor" opacity="0.92"/>
             </g>
-            <circle cx="65" cy="65" r="4" fill="#1e1e1e"
-                    stroke="currentColor" stroke-opacity="0.5" stroke-width="1.5"/>
-            <text x="65" y="81" text-anchor="middle"
-                  font-size="15" font-weight="800" fill="url(#pValGrad)">
+            <circle cx="80" cy="90" r="5" fill="#1e1e1e"
+                    stroke="currentColor" stroke-opacity="0.5" stroke-width="1.8"/>
+            <!-- Значение давления под центром -->
+            <text x="80" y="108" text-anchor="middle"
+                  font-size="18" font-weight="800" fill="url(#pValGrad)">
                 ${pVal != null ? pVal : "-"}
             </text>
-            <text x="65" y="91" text-anchor="middle"
-                  font-size="7" fill="currentColor" fill-opacity="0.50">гПа</text>
+            <text x="80" y="120" text-anchor="middle"
+                  font-size="8.5" fill="currentColor" fill-opacity="0.50">гПа</text>
         </svg>
         <div class="ind-trend">
-            <svg viewBox="0 0 44 14" width="60" height="19" aria-label="Тенденция">
+            <svg viewBox="0 0 52 14" width="70" height="19" aria-label="Тенденция">
                 ${trendPath
-                    ? `<path d="${trendPath}" fill="none" stroke="currentColor" stroke-opacity="0.80" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`
-                    : `<line x1="0" y1="7" x2="44" y2="7" stroke="currentColor" stroke-opacity="0.20" stroke-width="1.4" stroke-dasharray="3,3"/>`
+                    ? `<path d="${trendPath}" fill="none" stroke="currentColor" stroke-opacity="0.80" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`
+                    : `<line x1="0" y1="7" x2="52" y2="7" stroke="currentColor" stroke-opacity="0.20" stroke-width="1.5" stroke-dasharray="3,3"/>`
                 }
             </svg>
             <div class="small">${trendLabel}</div>
@@ -161,14 +167,13 @@ function pressureIndicatorSvg(d){
 ------------------------- */
 function humidityIndicatorSvg(humidity){
     const val    = humidity != null ? Math.round(humidity) : null;
-    // Дуга: центр (65,75), r=55 → M(10,75) A55,55 0 0,1 (120,75)
-    const arcLen = 172.8;
+    const arcLen = 204.2;
     const offset = val != null ? arcLen * (1 - val / 100) : arcLen;
 
     return `
     <div class="ind-card">
         <div class="small ind-title">Влажность</div>
-        <svg viewBox="0 0 130 88" width="150" height="101" aria-label="Влажность">
+        <svg viewBox="0 0 160 130" width="190" height="154" aria-label="Влажность">
             <defs>
                 <linearGradient id="humGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%"   stop-color="#ffd166"/>
@@ -176,31 +181,32 @@ function humidityIndicatorSvg(humidity){
                     <stop offset="100%" stop-color="#58aeff"/>
                 </linearGradient>
             </defs>
-            <path d="M10,75 A55,55 0 0,1 120,75"
+            <!-- Дуга та же: центр (80,90), r=65 -->
+            <path d="M 15.0 90.0 A 65 65 0 0 1 145.0 90.0"
                   stroke="currentColor" stroke-opacity="0.12"
-                  stroke-width="7" fill="none" stroke-linecap="round"/>
-            <path d="M10,75 A55,55 0 0,1 120,75"
+                  stroke-width="8" fill="none" stroke-linecap="round"/>
+            <path d="M 15.0 90.0 A 65 65 0 0 1 145.0 90.0"
                   stroke="url(#humGrad)"
                   stroke-width="7" fill="none"
                   stroke-dasharray="${arcLen}"
-                  stroke-dashoffset="${offset.toFixed != null ? offset.toFixed(1) : offset}"
+                  stroke-dashoffset="${offset.toFixed(1)}"
                   stroke-linecap="round"/>
-            <line x1="10.0" y1="75.0" x2="17.0" y2="75.0" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="26.1" y1="36.1" x2="31.1" y2="41.1" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="65.0" y1="20.0" x2="65.0" y2="27.0" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="103.9" y1="36.1" x2="98.9" y2="41.1" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="120.0" y1="75.0" x2="113.0" y2="75.0" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.5" stroke-linecap="round"/>
-            <text x="-1.0" y="76.0" text-anchor="end" font-size="6.5" fill="currentColor" fill-opacity="0.65">0</text>
-            <text x="18.3" y="29.3" text-anchor="end" font-size="6.5" fill="currentColor" fill-opacity="0.65">25</text>
-            <text x="65.0" y="10.0" text-anchor="middle" font-size="6.5" fill="currentColor" fill-opacity="0.65">50</text>
-            <text x="111.7" y="29.3" text-anchor="start" font-size="6.5" fill="currentColor" fill-opacity="0.65">75</text>
-            <text x="131.0" y="76.0" text-anchor="start" font-size="6.5" fill="currentColor" fill-opacity="0.65">100</text>
-            <text x="65" y="68" text-anchor="middle"
-                  font-size="19" font-weight="800" fill="currentColor">
-                ${val != null ? val : "-"}
+            <!-- Деления и метки -->
+            <line x1="15.0" y1="90.0" x2="23.0" y2="90.0" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="34.0" y1="44.0" x2="39.7" y2="49.7" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="80.0" y1="25.0" x2="80.0" y2="33.0" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="126.0" y1="44.0" x2="120.3" y2="49.7" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="145.0" y1="90.0" x2="137.0" y2="90.0" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.8" stroke-linecap="round"/>
+            <text x="1.0" y="91.5" text-anchor="end" font-size="7.5" fill="currentColor" fill-opacity="0.60">0</text>
+            <text x="24.1" y="35.6" text-anchor="end" font-size="7.5" fill="currentColor" fill-opacity="0.60">25</text>
+            <text x="80.0" y="12.5" text-anchor="middle" font-size="7.5" fill="currentColor" fill-opacity="0.60">50</text>
+            <text x="135.9" y="35.6" text-anchor="start" font-size="7.5" fill="currentColor" fill-opacity="0.60">75</text>
+            <text x="159.0" y="91.5" text-anchor="start" font-size="7.5" fill="currentColor" fill-opacity="0.60">100</text>
+            <!-- Значение — по центру как у давления -->
+            <text x="80" y="106" text-anchor="middle"
+                  font-size="22" font-weight="800" fill="currentColor">
+                ${val != null ? val + "%" : "-"}
             </text>
-            <text x="65" y="80" text-anchor="middle"
-                  font-size="8" fill="currentColor" fill-opacity="0.60">%</text>
         </svg>
     </div>`;
 }
