@@ -203,13 +203,44 @@ a{
     display:flex;
     flex-wrap:nowrap;
     gap:0;
-    align-items:flex-start;
+    align-items:stretch;
     overflow-x:auto;
     padding:8px 0 12px;
-    /* плавная прокрутка на мобильных */
     -webkit-overflow-scrolling:touch;
     scrollbar-width:thin;
     scrollbar-color:rgba(255,255,255,0.15) transparent;
+}
+
+/* Каждый индикатор — отдельная позиция фиксированной ширины */
+.ind-card{
+    flex:0 0 170px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:10px 14px;
+    border-right:1px solid #2e2e2e;
+}
+.ind-card:last-child{
+    border-right:none;
+}
+.ind-title{
+    margin-bottom:6px;
+    text-align:center;
+    font-size:11px;
+    color:#aaa;
+    letter-spacing:0.03em;
+}
+.ind-sub{
+    margin-top:4px;
+    text-align:center;
+    font-size:11px;
+    color:#888;
+}
+.ind-trend{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:6px;
 }
 
 .miniCard{
