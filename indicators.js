@@ -67,101 +67,104 @@ function windIndicatorSvg(d){
    Индикатор давления (полукруглый манометр)
 ------------------------- */
 function pressureIndicatorSvg(d){
-    const pVal   = d.seaPressure;
-    const pMin   = 980, pMax = 1040;
-    const angle  = pVal != null
-        ? (Math.max(pMin, Math.min(pMax, pVal)) - pMin) / (pMax - pMin) * 180 - 90
-        : 0;
+    const pVal     = d.seaPressure;
+    const pMin     = 980, pMax = 1040;
+    const pClamped = pVal != null ? Math.max(pMin, Math.min(pMax, pVal)) : null;
+    const angle    = pClamped != null ? (pClamped - pMin) / (pMax - pMin) * 180 - 180 : -180;
 
-    const trendSvg = d.tendencyCode == null
-        ? `<line x1="6" y1="9" x2="58" y2="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="1.8" stroke-linecap="round"/>`
-        : ({
-            "0":`<polyline points="6,13 19,12 32,10 45,8 58,5" fill="none" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-            "1":`<polyline points="6,14 18,13 30,11 42,7 58,4" fill="none" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-            "2":`<polyline points="6,13 20,10 34,6 46,6 58,6" fill="none" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-            "3":`<polyline points="6,5 18,8 30,11 42,13 58,14" fill="none" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-            "4":`<polyline points="6,5 18,7 30,8 42,8 58,8" fill="none" stroke="currentColor" stroke-opacity="0.72" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-            "5":`<polyline points="6,11 18,10 30,9 42,9 58,9" fill="none" stroke="currentColor" stroke-opacity="0.72" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-            "6":`<polyline points="6,4 18,7 30,11 42,13 58,14" fill="none" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-            "7":`<polyline points="6,4 18,5 30,8 42,12 58,14" fill="none" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
-            "8":`<polyline points="6,6 18,6 30,6 42,10 58,14" fill="none" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`
-        }[String(d.tendencyCode)] || `<line x1="6" y1="9" x2="58" y2="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="1.8" stroke-linecap="round"/>`);
+    const valColor = pVal == null ? "currentColor"
+        : pVal < 990  ? "#58aeff"
+        : pVal < 1005 ? "#5fe08f"
+        : pVal < 1020 ? "#ffd84d"
+        : "#ff8f43";
+
+    const trendPaths = {
+        "0":"M4,13 L14,11 L24,9 L34,7 L44,5",
+        "1":"M4,14 L14,12 L24,10 L34,7 L44,4",
+        "2":"M4,13 L14,10 L24,7 L34,6 L44,6",
+        "3":"M4,5 L14,7 L24,10 L34,12 L44,14",
+        "4":"M4,7 L14,8 L24,8 L34,8 L44,8",
+        "5":"M4,11 L14,10 L24,9 L34,9 L44,9",
+        "6":"M4,5 L14,7 L24,11 L34,13 L44,14",
+        "7":"M4,5 L14,6 L24,9 L34,12 L44,14",
+        "8":"M4,7 L14,7 L24,7 L34,11 L44,14"
+    };
+    const trendPath = d.tendencyCode != null ? (trendPaths[String(d.tendencyCode)] || null) : null;
+    const trendSign = d.tendencyValue != null
+        ? (d.tendencyValue > 0 ? "+" : "") + d.tendencyValue.toFixed(1)
+        : "—";
+
+    const trendHtml = trendPath
+        ? `<g transform="translate(31,87)"><path d="${trendPath}" fill="none" stroke="currentColor" stroke-opacity="0.80" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g><text x="60" y="99" text-anchor="middle" font-size="7" fill="currentColor" fill-opacity="0.65">${trendSign} гПа/3ч</text>`
+        : `<text x="60" y="97" text-anchor="middle" font-size="7" fill="currentColor" fill-opacity="0.30">тенденция —</text>`;
 
     return `
     <div class="miniCard pressureMiniCard">
-        <div class="small">Давление</div>
-        <div class="pressureMini">
-            <svg viewBox="0 0 100 100" width="100" height="100" aria-label="Давление">
-                <defs>
-                    <linearGradient id="pressureArcGrad" x1="18" y1="68" x2="82" y2="68" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%"   stop-color="#58aeff"/>
-                        <stop offset="20%"  stop-color="#72c3ff"/>
-                        <stop offset="38%"  stop-color="#5fe08f"/>
-                        <stop offset="55%"  stop-color="#b8ea63"/>
-                        <stop offset="72%"  stop-color="#ffd84d"/>
-                        <stop offset="88%"  stop-color="#ffb347"/>
-                        <stop offset="100%" stop-color="#ff8f43"/>
-                    </linearGradient>
-                </defs>
-                <!-- Фоновая дуга -->
-                <path d="M 20 68 A 30 30 0 0 1 80 68"
-                      fill="none" stroke="currentColor" stroke-opacity="0.10"
-                      stroke-width="5" stroke-linecap="round"/>
-                <!-- Цветная дуга -->
-                <path d="M 20 68 A 30 30 0 0 1 80 68"
-                      fill="none" stroke="url(#pressureArcGrad)"
-                      stroke-width="4.5" stroke-linecap="round"/>
-                <!-- Основные деления -->
-                <g stroke="currentColor" stroke-linecap="round">
-                    <line x1="20"  y1="68"   x2="25.5" y2="68"   stroke-opacity="0.50" stroke-width="1.9"/>
-                    <line x1="24"  y1="53"   x2="29"   y2="55"   stroke-opacity="0.28" stroke-width="1.3"/>
-                    <line x1="35"  y1="42"   x2="38.8" y2="46.1" stroke-opacity="0.42" stroke-width="1.8"/>
-                    <line x1="50"  y1="38"   x2="50"   y2="43.8" stroke-opacity="0.55" stroke-width="2"/>
-                    <line x1="65"  y1="42"   x2="61.2" y2="46.1" stroke-opacity="0.42" stroke-width="1.8"/>
-                    <line x1="76"  y1="53"   x2="71"   y2="55"   stroke-opacity="0.28" stroke-width="1.3"/>
-                    <line x1="80"  y1="68"   x2="74.5" y2="68"   stroke-opacity="0.50" stroke-width="1.9"/>
-                </g>
-                <!-- Промежуточные деления -->
-                <g stroke="currentColor" stroke-opacity="0.20" stroke-width="1.1" stroke-linecap="round">
-                    <line x1="21.1" y1="60.2" x2="25.3" y2="61.3"/>
-                    <line x1="28.8" y1="47.0" x2="32.3" y2="49.6"/>
-                    <line x1="42.2" y1="39.2" x2="44.2" y2="43.0"/>
-                    <line x1="57.8" y1="39.2" x2="55.8" y2="43.0"/>
-                    <line x1="71.2" y1="47.0" x2="67.7" y2="49.6"/>
-                    <line x1="78.9" y1="60.2" x2="74.7" y2="61.3"/>
-                </g>
-                <!-- Подписи -->
-                <text x="18" y="77" text-anchor="middle" font-size="6.5" fill="currentColor" fill-opacity="0.74">980</text>
-                <text x="35" y="36.5" text-anchor="middle" font-size="6.3" fill="currentColor" fill-opacity="0.82"
-                      transform="rotate(-28 35 36.5)">1000</text>
-                <text x="65" y="36.5" text-anchor="middle" font-size="6.3" fill="currentColor" fill-opacity="0.82"
-                      transform="rotate(28 65 36.5)">1020</text>
-                <text x="82" y="77" text-anchor="middle" font-size="6.5" fill="currentColor" fill-opacity="0.74">1040</text>
-                <!-- Стрелка -->
-                <g transform="rotate(${angle} 50 68)">
-                    <polygon points="50,36 46,44 54,44" fill="currentColor"/>
-                </g>
-                <!-- Значение -->
-                <text x="50" y="77.5" text-anchor="middle" font-size="13.2" font-weight="800" fill="currentColor">
-                    ${pVal != null ? pVal : "-"}
-                </text>
-                <text x="50" y="87.3" text-anchor="middle" font-size="7.1" fill="currentColor" fill-opacity="0.72">гПа</text>
-            </svg>
-        </div>
-        <div class="pressureTrendRow">
-            <svg viewBox="0 0 64 18" width="64" height="18" aria-label="Тенденция давления">
-                ${trendSvg}
-            </svg>
-            <div class="pressureTrendValue">
-                ${d.tendencyValue != null ? d.tendencyValue.toFixed(1) : "—"}
-            </div>
-        </div>
+        <div class="small" style="text-align:center;margin-bottom:2px;">Давление</div>
+        <svg viewBox="0 0 120 102" width="140" height="119" aria-label="Давление" style="display:block;margin:0 auto;overflow:visible;">
+            <defs>
+                <linearGradient id="pArcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%"   stop-color="#58aeff"/>
+                    <stop offset="30%"  stop-color="#5fe08f"/>
+                    <stop offset="60%"  stop-color="#ffd84d"/>
+                    <stop offset="100%" stop-color="#ff8f43"/>
+                </linearGradient>
+                <linearGradient id="pValGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%"   stop-color="${valColor}"/>
+                    <stop offset="100%" stop-color="${valColor}" stop-opacity="0.6"/>
+                </linearGradient>
+            </defs>
+
+            <!-- Фоновая дуга -->
+            <path d="M 14 80 A 46 46 0 0 1 106 80"
+                  fill="none" stroke="currentColor" stroke-opacity="0.10"
+                  stroke-width="6" stroke-linecap="round"/>
+            <!-- Цветная дуга -->
+            <path d="M 14 80 A 46 46 0 0 1 106 80"
+                  fill="none" stroke="url(#pArcGrad)"
+                  stroke-width="5" stroke-linecap="round"/>
+
+            <!-- Деления и подписи -->
+            <line x1="16.0" y1="80.0" x2="24.0" y2="80.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+                <text x="4.0" y="80.0" text-anchor="end" font-size="6" fill="currentColor" fill-opacity="0.70">980</text>
+                <line x1="21.9" y1="58.0" x2="28.8" y2="62.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+                <text x="11.5" y="52.0" text-anchor="end" font-size="6" fill="currentColor" fill-opacity="0.70">990</text>
+                <line x1="38.0" y1="41.9" x2="42.0" y2="48.8" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+                <text x="32.0" y="31.5" text-anchor="middle" font-size="6" fill="currentColor" fill-opacity="0.70">1000</text>
+                <line x1="60.0" y1="36.0" x2="60.0" y2="44.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+                <text x="60.0" y="24.0" text-anchor="middle" font-size="6" fill="currentColor" fill-opacity="0.70">1010</text>
+                <line x1="82.0" y1="41.9" x2="78.0" y2="48.8" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+                <text x="88.0" y="31.5" text-anchor="middle" font-size="6" fill="currentColor" fill-opacity="0.70">1020</text>
+                <line x1="98.1" y1="58.0" x2="91.2" y2="62.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+                <text x="108.5" y="52.0" text-anchor="start" font-size="6" fill="currentColor" fill-opacity="0.70">1030</text>
+                <line x1="104.0" y1="80.0" x2="96.0" y2="80.0" stroke="currentColor" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+                <text x="116.0" y="80.0" text-anchor="start" font-size="6" fill="currentColor" fill-opacity="0.70">1040</text>
+                <line x1="17.5" y1="68.6" x2="22.3" y2="69.9" stroke="currentColor" stroke-opacity="0.22" stroke-width="1" stroke-linecap="round"/>
+                <line x1="28.9" y1="48.9" x2="32.4" y2="52.4" stroke="currentColor" stroke-opacity="0.22" stroke-width="1" stroke-linecap="round"/>
+                <line x1="48.6" y1="37.5" x2="49.9" y2="42.3" stroke="currentColor" stroke-opacity="0.22" stroke-width="1" stroke-linecap="round"/>
+                <line x1="71.4" y1="37.5" x2="70.1" y2="42.3" stroke="currentColor" stroke-opacity="0.22" stroke-width="1" stroke-linecap="round"/>
+                <line x1="91.1" y1="48.9" x2="87.6" y2="52.4" stroke="currentColor" stroke-opacity="0.22" stroke-width="1" stroke-linecap="round"/>
+                <line x1="102.5" y1="68.6" x2="97.7" y2="69.9" stroke="currentColor" stroke-opacity="0.22" stroke-width="1" stroke-linecap="round"/>
+
+            <!-- Стрелка -->
+            <g transform="rotate(${angle} 60 80)">
+                <line x1="60" y1="80" x2="60" y2="92" stroke="currentColor" stroke-opacity="0.30" stroke-width="2" stroke-linecap="round"/>
+                <line x1="60" y1="80" x2="60" y2="40" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round"/>
+                <polygon points="60,36 57,45 63,45" fill="currentColor" opacity="0.85"/>
+            </g>
+            <circle cx="60" cy="80" r="3.5" fill="currentColor" opacity="0.65"/>
+
+            <!-- Значение -->
+            <text x="60" y="70" text-anchor="middle" font-size="14" font-weight="800" fill="url(#pValGrad)">${pVal != null ? pVal : "-"}</text>
+            <text x="60" y="79" text-anchor="middle" font-size="6.5" fill="currentColor" fill-opacity="0.50">гПа</text>
+
+            <!-- Тенденция -->
+            ${trendHtml}
+        </svg>
     </div>`;
 }
 
-/* -------------------------
-   Индикатор влажности (полукруглый)
-------------------------- */
+
 function humidityIndicatorSvg(humidity){
     const val     = humidity != null ? Math.round(humidity) : null;
     // Полная длина дуги M10,50 A50,50 0 0,1 110,50 ≈ 157

@@ -509,7 +509,7 @@ function renderSynop(d){
                         ? ` ${d.tendencyValue > 0 ? "+" : ""}${d.tendencyValue.toFixed(1)} гПа`
                         : ""))}
                 ${row("Явления",           escapeHtml(wx) || "-")}
-                ${row("Погода прошлая",    escapeHtml(synopWeatherText(d.weatherPast)))}
+                ${(d.weatherPast && d.weatherPast !== "00") ? row("Погода между сроками", escapeHtml(synopWeatherText(d.weatherPast))) : ""}
                 ${precipLine}
             </div>
 
