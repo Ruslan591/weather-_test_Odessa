@@ -150,7 +150,7 @@ function pressureIndicatorSvg(d){
                     stroke="currentColor" stroke-opacity="0.5" stroke-width="1.5"/>
 
             <!-- Значение: ниже центра, вне зоны стрелки -->
-            <text x="65" y="${pVal != null ? cy+16 : cy+16}" text-anchor="middle"
+            <text x="65" y="81" text-anchor="middle"
                   font-size="15" font-weight="800" fill="url(#pValGrad)">
                 ${pVal != null ? pVal : "-"}
             </text>
