@@ -75,7 +75,8 @@ function parseSynop(line){
     let tempMinSurface = null, dailyPrecip = null;
     let maxGust555 = null, sunHours555 = null;
     let phenomCodes = [];
-    let sec555TempMin = null;
+    let sec555TempMax = null, sec555TempMin = null, sec555Temp2m = null;
+    let surfStateCode555 = null;
 
     /* ---- Группа Nddff ---- */
     if(windGroup && /^\d{5}$/.test(windGroup)){
@@ -182,32 +183,42 @@ function parseSynop(line){
         }
     }
 
-    /* ---- Секция 555 ---- */
+    /* ---- Секция 555 (КН-01) ---- */
     for(const g of section555){
         const c = g.replace(/=+$/, "");
-        if(!c) continue;
+        if(!c || c.length < 4) continue;
 
-        // 0sTTT — мин. т° поверхности (трава / почва)
-        if(/^0[01/]\d{3}$/.test(c)){
-            const sn = c[1] === "1" ? -1 : 1;
-            tempMinSurface = sn * parseInt(c.slice(2), 10) / 10;
+        // 1EsnT'gT'g — мин. температура на поверхности почвы/травы
+        // E (c[1]) — состояние поверхности (0-9), sn (c[2]) — знак, T'gT'g — °C
+        if(/^1[0-9][01]\d{2}$/.test(c)){
+            surfStateCode555 = safeNum(c[1]);
+            const sn  = c[2] === "1" ? -1 : 1;
+            const val = parseInt(c.slice(3, 5), 10);
+            if(Number.isFinite(val)) tempMinSurface = sn * val;
         }
 
-        // 1/fff — украинский/СНГ формат: максимальный порыв ветра за период (м/с)
-        // '/' на месте признака означает «не определён», fff — скорость порыва
-        else if(/^1[\/0]\d{3}$/.test(c)){
+        // 1/fff — порыв ветра (слэш на месте E — только такой вариант)
+        else if(/^1\/\d{3}$/.test(c)){
             const val = parseInt(c.slice(2), 10);
             if(Number.isFinite(val)) maxGust555 = val;
         }
 
-        // 2sTTT — Tmin за период (в секции 555 хранится отдельно)
+        // 2snTnTnTn — минимальная температура воздуха за ночь (десятые °C)
         else if(/^2[01]\d{3}$/.test(c)){
             const sn  = c[1] === "1" ? -1 : 1;
             const val = parseInt(c.slice(2), 10);
             sec555TempMin = Number.isFinite(val) ? sn * val / 10 : null;
         }
 
-        // 4Esss — снег (если не было в 333)
+        // 3EsnTgTg — температура поверхности почвы
+        // E (c[1]) — состояние, sn (c[2]) — знак, TgTg — целые °C
+        else if(/^3[0-9][01]\d{2}$/.test(c)){
+            groundStateCode = safeNum(c[1]);
+            const sn  = c[2] === "1" ? -1 : 1;
+            const val = parseInt(c.slice(3, 5), 10);
+            groundTemp = Number.isFinite(val) ? sn * val : null;
+        }
+        // 4Esss — высота снежного покрова
         else if(/^4\d{4}$/.test(c) && snowDepth === null){
             snowDepthCode = safeNum(c[1]);
             const d = parseInt(c.slice(2), 10);
@@ -266,7 +277,10 @@ function parseSynop(line){
 
         // 555
         tempMinSurface,
+        surfStateCode555,
+        sec555TempMax,
         sec555TempMin,
+        sec555Temp2m,
         dailyPrecip,
         phenomCodes,
     };
@@ -438,10 +452,24 @@ function renderSynop(d){
 
     /* ---------- СЕКЦИЯ 555 ---------- */
     const rows555 = [
-        d.maxGust555     != null ? row("Максимальный порыв ветра",            fmt0(d.maxGust555," м/с"))  : "",
-        d.sec555TempMin  != null ? row("Минимальная температура",             fmt1(d.sec555TempMin,"°C")) : "",
-        d.tempMinSurface != null ? row("Мин. т° поверхности (трава/почва)",   fmt1(d.tempMinSurface,"°C")) : "",
-        d.dailyPrecip    != null ? row("Суточные осадки",                     fmt0(d.dailyPrecip," мм"))   : "",
+        // 1EsnT'gT'g — мин. т° поверхности почвы/травы (целые °C)
+        d.tempMinSurface != null ? row(
+            "Т° подстилающей поверхности",
+            fmt0(d.tempMinSurface,"°C") + groundStateLabel(d.surfStateCode555)
+        ) : "",
+        // 2snTnTnTn — мин. т° воздуха за ночь
+        d.sec555TempMin  != null ? row("Мин. т° воздуха за ночь",  fmt1(d.sec555TempMin,"°C")) : "",
+        // 3EsnTgTg — т° поверхности почвы (целые °C)
+        d.groundTemp     != null ? row(
+            "Т° поверхности почвы",
+            fmt0(d.groundTemp,"°C") + groundStateLabel(d.groundStateCode)
+        ) : "",
+        // 52snT2T2 — доп. т° воздуха на 2 м
+        d.sec555Temp2m   != null ? row("Т° воздуха на 2 м (доп.)", fmt1(d.sec555Temp2m,"°C")) : "",
+        // 1/fff — порыв ветра
+        d.maxGust555     != null ? row("Максимальный порыв ветра",  fmt0(d.maxGust555," м/с"))  : "",
+        // 6RRRtR — суточные осадки
+        d.dailyPrecip    != null ? row("Суточные осадки",           fmt0(d.dailyPrecip," мм"))   : "",
         ...(d.phenomCodes || []).filter(Boolean).map((pc, i) =>
             row(`Явление за период ${i+1}`, escapeHtml(synopWeatherText(pc)))),
     ].filter(Boolean).join("");
