@@ -201,11 +201,15 @@ a{
 
 .heroMeta{
     display:flex;
-    flex-wrap:wrap;
-    gap:20px;
+    flex-wrap:nowrap;
+    gap:0;
     align-items:flex-start;
-    justify-content:center;
-    padding:8px 0;
+    overflow-x:auto;
+    padding:8px 0 12px;
+    /* плавная прокрутка на мобильных */
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(255,255,255,0.15) transparent;
 }
 
 .miniCard{
