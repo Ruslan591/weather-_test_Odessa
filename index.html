@@ -8,7 +8,6 @@
 </head>
 <body>
 
-<!-- ========================= ВЕРХНЯЯ ПАНЕЛЬ ========================= -->
 <div class="header">
     <div class="headerTitle">Погода сейчас</div>
     <div class="nav">
@@ -19,54 +18,67 @@
 
 <div class="container">
 
+    <!-- SYNOP -->
     <div class="card">
         <div class="btnRow">
             <button id="btnSynop" onclick="loadSynopUI()">Обновить SYNOP</button>
         </div>
     </div>
-
     <div id="synopLogBox" class="card logBox hidden">
         <div class="cardTitle">Загрузка SYNOP</div>
         <div id="synopLog"></div>
     </div>
-
     <div id="main" class="card">Загрузка SYNOP...</div>
 
-    <div id="districtsLogBox" class="card logBox hidden">
-        <div class="cardTitle">Загрузка районов</div>
-        <div id="districtsLog"></div>
-    </div>
-
-    <div class="card">
-        <div class="btnRow">
-            <button id="btnDistricts" onclick="loadDistrictsUI()">Обновить районы</button>
-        </div>
-    </div>
-
-    <div id="districts" class="card">Загрузка районов...</div>
-
-    <!-- ========================= PWS ========================= -->
+    <!-- PWS одна станция -->
     <div class="card">
         <div class="btnRow">
             <button id="btnPWS" onclick="loadPWSUI()">Обновить PWS</button>
         </div>
     </div>
-
     <div id="pwsLogBox" class="card logBox hidden">
         <div class="cardTitle">Загрузка PWS</div>
         <div id="pwsLog"></div>
     </div>
-
     <div id="pws" class="card">Данные PWS не загружены</div>
+
+    <!-- PWS по районам -->
+    <div class="card">
+        <div class="btnRow">
+            <button id="btnPWSDistricts" onclick="loadPWSDistrictsUI()">Обновить PWS районы</button>
+        </div>
+    </div>
+    <div id="pwsDistrictsLogBox" class="card logBox hidden">
+        <div class="cardTitle">Загрузка PWS районов</div>
+        <div id="pwsDistrictsLog"></div>
+    </div>
+    <div id="pwsDistricts" class="card">Данные PWS районов не загружены</div>
+
+    <!-- Районы Open-Meteo -->
+    <div id="districtsLogBox" class="card logBox hidden">
+        <div class="cardTitle">Загрузка районов</div>
+        <div id="districtsLog"></div>
+    </div>
+    <div class="card">
+        <div class="btnRow">
+            <button id="btnDistricts" onclick="loadDistrictsUI()">Обновить районы (Open-Meteo)</button>
+        </div>
+    </div>
+    <div id="districts" class="card">Загрузка районов...</div>
 
 </div>
 
-<!-- Порядок: utils → indicators → synop → districts → pws → main -->
+<!--
+    Порядок скриптов важен:
+    utils → indicators → synop → districts → pws → pws_districts → main
+    pws_districts использует WU_KEYS из pws.js — должен идти после него
+-->
 <script src="utils.js"></script>
 <script src="indicators.js"></script>
 <script src="synop.js"></script>
 <script src="districts.js"></script>
 <script src="pws.js"></script>
+<script src="pws_districts.js"></script>
 <script src="main.js"></script>
 
 </body>

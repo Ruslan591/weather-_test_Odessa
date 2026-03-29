@@ -67,6 +67,9 @@ function parseSynop(line){
     let evapCode = null, evapValue = null;
     let sunHours = null, maxGust333 = null;
     let weatherChange = [];
+    // облака из секции 333 (отдельно от основного тела)
+    let cloud333Group = null, cloud333N = null;
+    let cloud333Low = null, cloud333Mid = null, cloud333High = null;
 
     // 444
     const specialClouds = [];
@@ -101,7 +104,10 @@ function parseSynop(line){
         else if(/^4\d{4}$/.test(g))        seaPressure     = pressureFromGroup(g);
         else if(/^5\d{4}$/.test(g)){
             tendencyCode  = g[1];
-            tendencyValue = parseInt(g.slice(2), 10) / 10;
+            const tRaw    = parseInt(g.slice(2), 10) / 10;
+            // Коды 5-8: итоговое падение → отрицательное значение
+            const falling = ["5","6","7","8"].includes(g[1]);
+            tendencyValue = falling ? -tRaw : tRaw;
         }
         else if(/^6\d{4}$/.test(g))        precipGroup = g;
         else if(/^7\d{4}$/.test(g)){
@@ -159,11 +165,17 @@ function parseSynop(line){
         else if(/^7\d{4}$/.test(c))
             weatherChange.push(c.slice(1,3));
 
-        // 8NhCLCMCH
+        // 8NhCLCMCH — облака из секции 333 сохраняем отдельно
         else if(/^8[\d/]{4}$/.test(c)){
-            if(!cloudLowCode)  cloudLowCode  = c[2] === "/" ? null : c[2];
-            if(!cloudMidCode)  cloudMidCode  = c[3] === "/" ? null : c[3];
-            if(!cloudHighCode) cloudHighCode = c[4] === "/" ? null : c[4];
+            cloud333Group = c;
+            cloud333N     = c[1] === "/" ? null : safeNum(c[1]);
+            cloud333Low   = c[2] === "/" ? null : c[2];
+            cloud333Mid   = c[3] === "/" ? null : c[3];
+            cloud333High  = c[4] === "/" ? null : c[4];
+            // Также обновляем основные если они ещё не заполнены
+            if(!cloudLowCode)  cloudLowCode  = cloud333Low;
+            if(!cloudMidCode)  cloudMidCode  = cloud333Mid;
+            if(!cloudHighCode) cloudHighCode = cloud333High;
         }
 
         // 907ff — максимальный порыв ветра
@@ -265,6 +277,8 @@ function parseSynop(line){
         // 333
         tempMax, tempMin,
         groundStateCode, groundTemp,
+        cloud333Group, cloud333N,
+        cloud333Low, cloud333Mid, cloud333High,
         snowDepthCode, snowDepth,
         evapCode, evapValue,
         sunHours: sunHours ?? sunHours555 ?? null,
@@ -414,6 +428,11 @@ function renderSynop(d){
     /* ---------- СЕКЦИЯ 333 ---------- */
     const rows333 = [
         d.tempMax    != null ? row("Максимальная температура", fmt1(d.tempMax,"°C")) : "",
+        d.cloud333Group != null ? row("Облачность (уточнение)",
+            (d.cloud333N != null ? cloudAmountText(d.cloud333N) + " · " : "") +
+            [cloudGenusLow(d.cloud333Low), cloudGenusMid(d.cloud333Mid), cloudGenusHigh(d.cloud333High)]
+            .filter(v => v && v !== "-").join(" / ") || "-"
+        ) : "",
         d.tempMin    != null ? row("Минимальная температура",  fmt1(d.tempMin,"°C")) : "",
         d.groundTemp != null ? row("Температура почвы",
             fmt1(d.groundTemp,"°C") + groundStateLabel(d.groundStateCode)) : "",
@@ -653,6 +672,10 @@ async function loadSynopUI(){
         logTo("synopLog","📥 Ответ получен, разбор групп и секций");
         renderSynop(synop);
         logTo("synopLog","✅ SYNOP успешно обновлён");
+        // Автокалибровка PWS по давлению SYNOP (только в часы наблюдений)
+        if(typeof calibratePWSBySynop === "function"){
+            calibratePWSBySynop(synop.seaPressure);
+        }
         hideLogBoxLater("synopLogBox", 3200);
     } catch(e){
         logTo("synopLog","❌ Ошибка: " + (e?.message || e));

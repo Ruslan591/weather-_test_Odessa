@@ -18,7 +18,7 @@ const WU_KEYS = [
 ];
 
 // Интервал обновления в секундах
-const PWS_REFRESH_SEC = 15;
+const PWS_REFRESH_SEC = 60;
 
 /* =========================================================
    2. СОСТОЯНИЕ
@@ -32,69 +32,32 @@ let _pwsLastEpoch = null; // отслеживаем новизну данных
 ========================================================= */
 async function loadPWS(){
     const key = WU_KEYS[_pwsKeyIndex % WU_KEYS.length];
-    const url  =
+    const url =
         `https://api.weather.com/v2/pws/observations/current` +
         `?stationId=${encodeURIComponent(PWS_STATION_ID)}` +
         `&format=json&units=m&numericPrecision=decimal` +
         `&apiKey=${key}`;
 
-    const proxies = [
-        "https://api.allorigins.win/raw?url=",
-        "https://corsproxy.io/?",
-        "https://proxy.cors.sh/",
-        "https://cors.x2u.in/"
-    ];
-
-    const storageKey = "pwsProxyTimes";
-    let proxyTimes = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    proxies.forEach(p => { if(!proxyTimes[p]) proxyTimes[p] = []; });
-
-    function saveTime(proxy, ms, limit=10){
-        if(!proxyTimes[proxy]) proxyTimes[proxy] = [];
-        proxyTimes[proxy].push(ms);
-        if(proxyTimes[proxy].length > limit)
-            proxyTimes[proxy] = proxyTimes[proxy].slice(-limit);
-    }
-
-    // Пробуем все прокси параллельно, берём первый успешный
-    const requests = proxies.map(proxy => new Promise(async (resolve, reject) => {
-        const ctrl  = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 8000);
-        const t0    = performance.now();
-        try {
-            const r = await fetch(proxy + encodeURIComponent(url), {
-                signal: ctrl.signal, cache: "no-store"
-            });
-            if(!r.ok) throw new Error("HTTP " + r.status);
-            const text = await r.text();
-            if(!text?.trim()) throw new Error("Пустой ответ");
-            const data = JSON.parse(text);
-            if(data?.errors?.length) throw new Error(data.errors[0]?.error?.message || "API error");
-            if(!data?.observations?.length) throw new Error("Нет данных");
-            const ms = Math.round(performance.now() - t0);
-            saveTime(proxy, ms);
-            resolve({ proxy, data, ms });
-        } catch(e){
-            saveTime(proxy, Math.round(performance.now() - t0));
-            reject(e);
-        } finally {
-            clearTimeout(timer);
+    // api.weather.com разрешает CORS — прокси не нужен
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    try {
+        const r = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+        if(!r.ok){
+            if(r.status === 401 || r.status === 403) _pwsKeyIndex++;
+            throw new Error("HTTP " + r.status);
         }
-    }));
-
-    const settled = await Promise.allSettled(requests);
-    localStorage.setItem(storageKey, JSON.stringify(proxyTimes));
-
-    const ok = settled.filter(r => r.status === "fulfilled").map(r => r.value);
-    if(!ok.length){
-        // Пробуем второй ключ при следующем запросе
-        _pwsKeyIndex++;
-        throw new Error("Все прокси не ответили");
+        const data = await r.json();
+        if(data?.errors?.length)
+            throw new Error(data.errors[0]?.error?.message || "API error");
+        if(!data?.observations?.length)
+            throw new Error("Нет данных observations");
+        return parsePWS(data);
+    } finally {
+        clearTimeout(timer);
     }
-
-    ok.sort((a, b) => a.ms - b.ms);
-    return parsePWS(ok[0].data);
 }
+
 
 /* =========================================================
    4. ПАРСИНГ
