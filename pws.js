@@ -35,7 +35,7 @@ async function loadPWS(){
     const url  =
         `https://api.weather.com/v2/pws/observations/current` +
         `?stationId=${encodeURIComponent(PWS_STATION_ID)}` +
-        `&format=json&units=m` +
+        `&format=json&units=m&numericPrecision=decimal` +
         `&apiKey=${key}`;
 
     const proxies = [
