@@ -146,7 +146,7 @@ function localTimeFromSynopYYGGi(yyggi){
 
     const now = new Date();
     const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day, hour, 0, 0));
-    const local   = new Date(utcDate.getTime() + 2 * 3600 * 1000); // UTC+2
+    const local   = new Date(utcDate.getTime() + 3 * 3600 * 1000); // UTC+3 (летнее время)
 
     const dd = String(local.getUTCDate()).padStart(2,"0");
     const mm = String(local.getUTCMonth() + 1).padStart(2,"0");

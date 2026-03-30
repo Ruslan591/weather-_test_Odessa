@@ -517,12 +517,13 @@ function renderSynop(d){
             </div>
         </div>
 
-        <div class="heroMeta" style="margin-top:16px;">
+        <!-- Индикаторы 2×2: температура | давление / ветер | влажность -->
+        <div class="ind-grid-2x2" style="margin-top:16px;">
+            ${tempIndicatorSvg(d.temp, feelsLike)}
+            ${humidityIndicatorSvg(humidity)}
             ${windIndicatorSvg(d)}
             ${pressureIndicatorSvg(d)}
-            <div class="miniCard" style="display:flex;flex-direction:column;align-items:center;">
-                ${humidityIndicatorSvg(humidity)}
-            </div>
+            
         </div>
 
         <div class="grid2" style="margin-top:16px;">
