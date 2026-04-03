@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<// html lang="ru">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Почасовой прогноз Одесса 24ч</title>
 <link rel="stylesheet" href="forecast.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
 <body>
 
@@ -22,7 +23,7 @@
 </div>
 <div class="main-title">
   <!-- Кнопка выбора срока прогноза -->
-<span class="forecast-button" onclick="toggleForecastMenu()">
+<span class="forecast-button" onclick="toggleForecastMenu(event)">
   <span id="forecastDays">1 день</span> ▼
   <div id="forecastMenu" class="forecast-menu" style="display:none;">
     <div onclick="setForecastDays(2, event)">2 дня</div>
@@ -48,18 +49,23 @@
 </div>
 <div id="content">
  <!-- Контейнер для графиков и таблиц -->
-  <div id="graphs" style="display:flex; flex-direction:column; gap:12px; max-width:340px; margin:0 auto;"></div>
+  <div id="fcChart" style="max-width:340px; margin:0 auto; padding: 0 8px;">
+    <div class="fc-param-row" id="fcParamRow"></div>
+    <div id="fcChartWrap" style="background:#161616;border-radius:10px;overflow:hidden;padding:4px 0 0;"></div>
+    <div id="fcStats" class="fc-stats" style="display:none;margin-top:4px;"></div>
+</div>
    <!--  Контейнер для почасового прогноза -->
 <div id="forecast"></div>
 
 <script>
 // --- Вспомогательные функции ---
 // Текущий выбор дней прогноза
-let forecastDays = localStorage.getItem("forecastDays") || 1;
+let forecastDays = parseInt(localStorage.getItem("forecastDays")) || 1;
 document.getElementById("forecastDays").innerText = forecastDays + (forecastDays > 1 ? " дня" : " день");
 
 // Переключение видимости меню
-function toggleForecastMenu(){
+function toggleForecastMenu(e){
+    e.stopPropagation();
     const menu = document.getElementById("forecastMenu");
     menu.style.display = menu.style.display === "block" ? "none" : "block";
 }
@@ -124,444 +130,447 @@ document.addEventListener("click", (e) => {
     }
 });
 
-// заглушка функции load()
-function load(){ console.log("Загружена модель:", weatherModel); }
-// --- включает или выключает CSS-класс active у родительского элемента --- 
-function toggle(el){el.parentElement.classList.toggle("active")}
-// --- преобразует градусы ветра в направление --- 
+// --- включает или выключает CSS-класс active у родительского элемента ---
+function toggle(el){ el.parentElement.classList.toggle("active"); }
+
+// --- преобразует градусы ветра в направление ---
 function windDir(d){
     const dirs=["С","ССВ","СВ","ВСВ","В","ВЮВ","ЮВ","ЮЮВ","Ю","ЮЮЗ","ЮЗ","ЗЮЗ","З","ЗСЗ","СЗ","ССЗ"];
     return dirs[Math.round(d/22.5)%16];
 }
-// --- функция сглаживания линии графика
+
+// --- сглаживание линии ---
 function smooth(points){
     if(!points.length) return "";
-    let d=`M ${points[0].x} ${points[0].y}`;
-    for(let i=1;i<points.length-1;i++){
-        const xc=(points[i].x+points[i+1].x)/2;
-        const yc=(points[i].y+points[i+1].y)/2;
-        d+=` Q ${points[i].x} ${points[i].y} ${xc} ${yc}`;
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for(let i = 1; i < points.length - 1; i++){
+        const xc = (points[i].x + points[i+1].x) / 2;
+        const yc = (points[i].y + points[i+1].y) / 2;
+        d += ` Q ${points[i].x} ${points[i].y} ${xc} ${yc}`;
     }
-    const last=points[points.length-1];
-    d+=` T ${last.x} ${last.y}`;
+    const last = points[points.length - 1];
+    d += ` T ${last.x} ${last.y}`;
     return d;
 }
-// --- график
-function createGraph(dataSlice, timesSlice, color, hoursToShow = 24, graphId = 0){    
-  const nowTime = Date.now();
-    if(dataSlice.length === 0) return `<svg width="100%" height="90"></svg>`;
 
-    const w = 320, h = 90;
-    const step = w / Math.max(dataSlice.length - 1, 1);
-    const min = Math.min(...dataSlice);
-    const max = Math.max(...dataSlice);
-    const norm = v => h - 10 - (v - min) / (max - min || 1) * (h - 20);
+// --- параметры графика ---
+const FC_PARAMS = [
+    { key:"temp",     label:"Температура", color:"#ff8f00", unit:"°",    field: h => h.temperature_2m        },
+    { key:"pressure", label:"Давление",    color:"#4aa3ff", unit:" гПа", field: h => h.pressure_msl          },
+    { key:"humidity", label:"Влажность",   color:"#00bcd4", unit:"%",    field: h => h.relative_humidity_2m  },
+    { key:"wind",     label:"Ветер",       color:"#8bc34a", unit:" м/с", field: h => h.wind_speed_10m        },
+    { key:"rain",     label:"Осадки",      color:"#448aff", unit:" мм",  field: h => h.rain                  },
+];
 
-    let pts = [], labels = "", nowLine = "";
+let _fcParam = "temp";
+let _fcHours = null;
+let _fcTimes = null;
 
-    // Линии в 0:00
-    let dayLines = "";
-    timesSlice.forEach((tRaw, i)=>{
-    const t = new Date(tRaw);
-
-    const x = i * step;
-    const y = norm(dataSlice[i]);
-    pts.push({x, y});
-
-   // if(t.getTime() <= nowTime && nowTime < t.getTime() + 3600000)
-      //  nowLine = `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="#ffffff55" stroke-dasharray="4 4"/>`;
-
-    const hr = t.getHours();
-
-    if(hr === 0)
-        dayLines += `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="#666" stroke-dasharray="2 4"/>`;
-
-    if(hr % 3 === 0)
-        labels += `<text x="${x}" y="${h-2}" font-size="9" text-anchor="middle" fill="#888">${hr}</text>`;
-});
-
-// --- точная линия текущего времени ---
-const startTime = new Date(timesSlice[0]).getTime();
-const endTime = new Date(timesSlice[timesSlice.length - 1]).getTime();
-
-if(nowTime >= startTime && nowTime <= endTime){
-    const ratio = (nowTime - startTime) / (endTime - startTime);
-    const xNow = ratio * w;
-
-    nowLine = `<line x1="${xNow}" y1="0" x2="${xNow}" y2="${h}" stroke="#ffffff55" stroke-width="1.5"/>`;
+function buildFcParamRow(){
+    const row = document.getElementById("fcParamRow");
+    if(!row) return;
+    row.innerHTML = FC_PARAMS.map(p => `
+        <button class="fc-param-btn${p.key === _fcParam ? " active" : ""}"
+                data-key="${p.key}"
+                style="--c:${p.color}"
+                onclick="fcSwitchParam('${p.key}')">
+            ${p.label}
+        </button>`
+    ).join("");
 }
 
-    // Линия между первой и последней точкой
-    const baseY0 = pts[0].y;
-    const baseY1 = pts[pts.length-1].y;
+function fcSwitchParam(key){
+    _fcParam = key;
+    document.querySelectorAll(".fc-param-btn").forEach(b =>
+        b.classList.toggle("active", b.dataset.key === key)
+    );
+    if(_fcHours) renderForecastChart(_fcHours, _fcTimes);
+}
 
-    // Путь для области между графиком и виртуальной линией
-    let areaPath = "M" + pts.map((p,i) => `${p.x},${p.y}`).join(" L");
-    areaPath += ` L${pts[pts.length-1].x},${baseY1} L${pts[0].x},${baseY0} Z`;
+function renderForecastChart(hours, times){
+    const wrap     = document.getElementById("fcChartWrap");
+    const statsBox = document.getElementById("fcStats");
+    if(!wrap) return;
 
-    // Уникальный id градиента
-    const gradientId = `areaGradient${graphId}`;
-    const gradient = `
-    <defs>
-      <linearGradient id="${gradientId}" x1="0" y1="${Math.min(...pts.map(p=>p.y), baseY0, baseY1)}"
-                                     x2="0" y2="${Math.max(...pts.map(p=>p.y), baseY0, baseY1)}"
-                                     gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
-        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    `;
+    const cfg  = FC_PARAMS.find(p => p.key === _fcParam);
+    const data = hours.map(h => cfg.field(h));
 
-    return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">
-        ${gradient}
-        ${dayLines}
-        ${nowLine}
-        <path d="${areaPath}" fill="url(#${gradientId})" stroke="none"/>
-        <path d="${smooth(pts)}" fill="none" stroke="${color}" stroke-width="2.5"/>
-        ${labels}
+    const W = 320, H = 160;
+    const pad = { t:14, r:10, b:28, l:38 };
+    const iW  = W - pad.l - pad.r;
+    const iH  = H - pad.t - pad.b;
+
+    const vAll = data.filter(v => v != null && !isNaN(v));
+    if(!vAll.length){ wrap.innerHTML = ""; return; }
+
+    let vMin = Math.min(...vAll), vMax = Math.max(...vAll);
+    const spread = vMax - vMin || 1;
+    vMin -= spread * 0.3;
+    vMax += spread * 0.3;
+
+    const tMin = new Date(times[0]).getTime();
+    const tMax = new Date(times[times.length - 1]).getTime();
+    const px = t => pad.l + (new Date(t).getTime() - tMin) / (tMax - tMin) * iW;
+    const py = v => pad.t + (1 - (v - vMin) / (vMax - vMin)) * iH;
+
+    const pts = times.map((t, i) => ({ x: px(t), y: py(data[i] ?? vMin) }));
+    const linePath = smooth(pts);
+
+    const x0 = pts[0].x,            y0 = pts[0].y;
+    const xN = pts[pts.length-1].x, yN = pts[pts.length-1].y;
+    const areaPath = linePath + ` L${xN},${yN} L${x0},${y0} Z`;
+
+    // Сетка Y
+    let yGrid = "", yLabels = "";
+    for(let i = 0; i <= 4; i++){
+        const v = vMin + (vMax - vMin) * (1 - i / 4);
+        const y = pad.t + iH * i / 4;
+        yGrid   += `<line x1="${pad.l}" y1="${y}" x2="${pad.l+iW}" y2="${y}" stroke="#252525" stroke-width="1"/>`;
+        yLabels += `<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="#555">${v.toFixed(cfg.key==="pressure"?0:1)}</text>`;
+    }
+
+    // Сетка X + метки
+    let xGrid = "", xLabels = "";
+    times.forEach(t => {
+        const d  = new Date(t);
+        const hr = d.getHours();
+        const x  = px(t);
+        if(hr === 0)
+            xGrid   += `<line x1="${x}" y1="${pad.t}" x2="${x}" y2="${pad.t+iH}" stroke="#444" stroke-dasharray="2 4"/>`;
+        if(hr % 6 === 0)
+            xLabels += `<text x="${x}" y="${H-6}" text-anchor="middle" font-size="9" fill="#555">${hr}:00</text>`;
+    });
+
+    // Линия текущего времени
+    let nowLine = "";
+    const nowTs = Date.now();
+    if(nowTs >= tMin && nowTs <= tMax){
+        const xNow = pad.l + (nowTs - tMin) / (tMax - tMin) * iW;
+        nowLine = `<line x1="${xNow}" y1="${pad.t}" x2="${xNow}" y2="${pad.t+iH}"
+                         stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    }
+
+    const gradY0 = Math.min(y0, yN);
+    const gradY1 = Math.max(y0, yN) + iH * 0.4;
+    const gradId = "fcGrad_" + cfg.key;
+
+    wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block;">
+        <defs>
+            <linearGradient id="${gradId}" x1="0" y1="${gradY0}" x2="0" y2="${gradY1}"
+                            gradientUnits="userSpaceOnUse">
+                <stop offset="0%"   stop-color="${cfg.color}" stop-opacity="0.32"/>
+                <stop offset="100%" stop-color="${cfg.color}" stop-opacity="0"/>
+            </linearGradient>
+        </defs>
+        ${yGrid}${xGrid}${nowLine}
+        <path d="${areaPath}" fill="url(#${gradId})" stroke="none"/>
+        <line x1="${x0}" y1="${y0}" x2="${xN}" y2="${yN}"
+              stroke="${cfg.color}" stroke-opacity="0.22" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="${linePath}" fill="none" stroke="${cfg.color}" stroke-width="2.5"/>
+        ${yLabels}${xLabels}
     </svg>`;
-}
-;
 
-function createStatsTable(dataSlice, unit, title){
-    if(!dataSlice || dataSlice.length === 0) return "";
-
-    const start = dataSlice[0];
-    const end = dataSlice[dataSlice.length-1];
-    const min = Math.min(...dataSlice);
-    const max = Math.max(...dataSlice);
+    // Статистика
+    const start = vAll[0], end = vAll[vAll.length-1];
+    const min = Math.min(...vAll), max = Math.max(...vAll);
     const delta = end - start;
-    const velocity = delta / (dataSlice.length - 1 || 1);
-    const forecast = end + velocity * 3;
+    const f = (v, dec=1) => v.toFixed(dec) + cfg.unit;
+    const trendC = delta > 0 ? "#ff4444" : "#4fc3f7";
 
-    // Цвета для роста/падения
-    const trendColor = delta > 0 ? "#ff4444" : "#4fc3f7";
-    const forecastColor = forecast > end ? "#ff4444" : "#4fc3f7";
+    // Время мин/макс
+    const iMin = data.indexOf(min), iMax = data.indexOf(max);
+    const tFmt = idx => {
+        if(idx < 0 || !times[idx]) return "";
+        const d = new Date(times[idx]);
+        return isNaN(d) ? "" : d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    };
 
-    return `
-    <div class="stats-table" style="
-        display:grid; 
-        grid-template-columns: repeat(3, 1fr); 
-        gap:6px; 
-        background: linear-gradient(135deg, #222 0%, #111 100%); 
-        padding:10px; 
-        border-radius:8px;
-        color:#eee;
-        font-family:sans-serif;
-        font-size:12px;
-    ">
-        <div style="text-align:center;">
-            Start<br><b>${start.toFixed(1)}${unit}</b>
+    if(statsBox){
+        statsBox.style.display = "grid";
+        statsBox.innerHTML = `
+        <div class="fc-stat-card">
+            <div class="fc-stat-label">Минимум</div>
+            <div class="fc-stat-value" style="color:${cfg.color};">${f(min)}</div>
+            <div class="fc-stat-time">${tFmt(iMin)}</div>
         </div>
-        <div style="text-align:center;">
-            End<br><b style="color:${trendColor}">${end.toFixed(1)}${unit}</b>
+        <div class="fc-stat-card">
+            <div class="fc-stat-label">Максимум</div>
+            <div class="fc-stat-value" style="color:${cfg.color};">${f(max)}</div>
+            <div class="fc-stat-time">${tFmt(iMax)}</div>
         </div>
-        <div style="text-align:center;">
-            Δ24h<br><b style="color:${trendColor}">${delta.toFixed(1)}${unit}</b>
+        <div class="fc-stat-card">
+            <div class="fc-stat-label">Среднее</div>
+            <div class="fc-stat-value" style="color:#ccc;">${f(vAll.reduce((a,b)=>a+b,0)/vAll.length)}</div>
+            <div class="fc-stat-time">${vAll.length} значений</div>
         </div>
-        <div style="text-align:center;">
-            Min<br><b>${min.toFixed(1)}${unit}</b>
-        </div>
-        <div style="text-align:center;">
-            Max<br><b>${max.toFixed(1)}${unit}</b>
-        </div>
-        <div style="text-align:center;">
-            Forecast +3h<br><b style="color:${forecastColor}">${forecast.toFixed(1)}${unit}</b>
-        </div>
-        <div style="grid-column:span 3; text-align:center; margin-top:4px; font-weight:bold; color:#ddd;">
-            ${title}
-        </div>
-    </div>
-    `;
+        <div class="fc-stat-card">
+            <div class="fc-stat-label">Изменение</div>
+            <div class="fc-stat-value" style="color:${trendC};">${delta>0?"+":""}${f(delta)}</div>
+            <div class="fc-stat-time">нач. → кон.</div>
+        </div>`;
+    }
+
+    // Тултип по наведению на SVG
+    const svgEl = wrap.querySelector("svg");
+    if(svgEl){
+        svgEl.addEventListener("mousemove", e => {
+            const rect = svgEl.getBoundingClientRect();
+            const scaleX = W / rect.width;
+            const mx = (e.clientX - rect.left) * scaleX;
+            // Ищем ближайшую точку
+            let best = 0, bestDist = Infinity;
+            pts.forEach((p, i) => {
+                const dist = Math.abs(p.x - mx);
+                if(dist < bestDist){ bestDist = dist; best = i; }
+            });
+            fcShowTooltip(e, best, data, times, cfg);
+        });
+        svgEl.addEventListener("mouseleave", fcHideTooltip);
+        svgEl.addEventListener("touchmove", e => {
+            const touch = e.touches[0];
+            const rect = svgEl.getBoundingClientRect();
+            const scaleX = W / rect.width;
+            const mx = (touch.clientX - rect.left) * scaleX;
+            let best = 0, bestDist = Infinity;
+            pts.forEach((p, i) => {
+                const dist = Math.abs(p.x - mx);
+                if(dist < bestDist){ bestDist = dist; best = i; }
+            });
+            fcShowTooltip(touch, best, data, times, cfg);
+            e.preventDefault();
+        }, { passive: false });
+        svgEl.addEventListener("touchend", fcHideTooltip);
+    }
 }
 
+// --- тултип графика ---
+function fcShowTooltip(e, idx, data, times, cfg){
+    let tip = document.getElementById("fcTooltip");
+    if(!tip){
+        tip = document.createElement("div");
+        tip.id = "fcTooltip";
+        tip.style.cssText = `
+            position:fixed;z-index:999;pointer-events:none;
+            background:rgba(20,20,20,0.97);border:1px solid #333;border-radius:10px;
+            padding:10px 14px;font-size:12px;color:#eee;min-width:140px;
+            box-shadow:0 4px 24px rgba(0,0,0,0.5);transition:opacity 0.1s;
+        `;
+        document.body.appendChild(tip);
+    }
+    const val = data[idx];
+    const t = times[idx] ? new Date(times[idx]) : null;
+    const timeStr = t && !isNaN(t)
+        ? t.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})
+        : "";
+    tip.innerHTML = `
+        <div style="color:#888;margin-bottom:6px;font-size:11px;">${timeStr}</div>
+        <div style="font-size:16px;font-weight:800;color:${cfg.color};">${val != null ? val.toFixed(1) + cfg.unit : "—"}</div>
+        <div style="color:#aaa;font-size:11px;">${cfg.label}</div>
+    `;
+    tip.style.opacity = "1";
+    const tipW = 160;
+    const left = e.clientX + tipW + 20 > window.innerWidth ? e.clientX - tipW - 12 : e.clientX + 12;
+    tip.style.left = left + "px";
+    tip.style.top  = (e.clientY - 40) + "px";
+}
 
+function fcHideTooltip(){
+    const tip = document.getElementById("fcTooltip");
+    if(tip) tip.style.opacity = "0";
+}
 
+// --- погодные коды ---
+function weatherCode(code, hour, cloud, rain, snow){
+    const isDay = hour >= 6 && hour < 21;
+    if(snow > 0)  return { icon:"🌨️", text:"Снег" };
+    if(rain > 0.5) return { icon:"🌧️", text:"Дождь" };
+    if(code >= 95) return { icon:"⛈️",  text:"Гроза" };
+    if(code >= 80) return { icon:"🌦️", text:"Ливень" };
+    if(code >= 71) return { icon:"🌨️", text:"Снегопад" };
+    if(code >= 61) return { icon:"🌧️", text:"Дождь" };
+    if(code >= 51) return { icon:"🌦️", text:"Морось" };
+    if(code >= 45) return { icon:"🌫️", text:"Туман" };
+    if(cloud > 80) return { icon:"☁️",  text:"Пасмурно" };
+    if(cloud > 40) return { icon: isDay ? "⛅" : "🌙☁️", text:"Облачно" };
+    return { icon: isDay ? "☀️" : "🌙", text:"Ясно" };
+}
 
-// --- Основная функция ---
+// --- уровень комфорта ---
+function comfortLevel(h){
+    const t = h.temperature_2m;
+    const w = h.wind_speed_10m;
+    const r = h.rain + h.showers;
+    if(r > 2)  return { comfort:"Дождливо",  color:"#4a90d9" };
+    if(t < -10) return { comfort:"Сильный мороз", color:"#7ec8ff" };
+    if(t < 0)  return { comfort:"Морозно",   color:"#9dd6ff" };
+    if(t < 10) return { comfort:"Прохладно", color:"#5fe08f" };
+    if(t > 30) return { comfort:"Жарко",     color:"#ff6b6b" };
+    if(w > 10) return { comfort:"Ветрено",   color:"#ffd166" };
+    return { comfort:"Комфортно", color:"#5fe08f" };
+}
+
+// --- основная загрузка ---
 async function load(){
-    const API= `https://api.open-meteo.com/v1/forecast?latitude=46.43&longitude=30.74&hourly=temperature_2m,apparent_temperature,pressure_msl,relative_humidity_2m,weather_code,visibility,wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation,showers,snowfall,snow_depth,shortwave_radiation,direct_radiation,diffuse_radiation,dew_point_2m,runoff,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high&models=${weatherModel}&timezone=auto&forecast_days=${forecastDays}&wind_speed_unit=ms`;
-    const r=await fetch(API);
-    const data=await r.json();
-    const h=data.hourly;
-    const hours=h.time.map((t,i)=>({
-        time:t,
-        temperature_2m:h.temperature_2m[i],
-        apparent_temperature:h.apparent_temperature[i],
-        pressure_msl:h.pressure_msl[i],
-        relative_humidity_2m:h.relative_humidity_2m[i],
-        weather_code:h.weather_code[i],
-        visibility:h.visibility[i],
-        wind_speed_10m:h.wind_speed_10m[i],
-        wind_gusts_10m:h.wind_gusts_10m[i],
-        wind_direction_10m:h.wind_direction_10m[i],
-        rain:h.precipitation[i]||0,
-        showers:h.showers[i]||0,
-        snowfall:h.snowfall[i],
-        snow_depth:h.snow_depth[i],
-        shortwave_radiation:h.shortwave_radiation[i],
-        direct_radiation:h.direct_radiation[i],
-        diffuse_radiation:h.diffuse_radiation[i],
-        dew_point_2m:h.dew_point_2m[i],
-        runoff:h.runoff[i],
-        cloud_cover:h.cloud_cover[i],
-        cloud_cover_low:h.cloud_cover_low[i],
-        cloud_cover_mid:h.cloud_cover_mid[i],
-        cloud_cover_high:h.cloud_cover_high[i]
+    const API = `https://api.open-meteo.com/v1/forecast?latitude=46.43&longitude=30.74&hourly=temperature_2m,apparent_temperature,pressure_msl,relative_humidity_2m,weather_code,visibility,wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation,precipitation_probability,showers,snowfall,snow_depth,shortwave_radiation,direct_radiation,diffuse_radiation,dew_point_2m,runoff,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high&models=${weatherModel}&timezone=auto&forecast_days=${forecastDays}&wind_speed_unit=ms`;
+    const r    = await fetch(API);
+    const data = await r.json();
+    const h    = data.hourly;
+
+    const hours = h.time.map((t, i) => ({
+        time:                  t,
+        temperature_2m:        h.temperature_2m[i],
+        apparent_temperature:  h.apparent_temperature[i],
+        pressure_msl:          h.pressure_msl[i],
+        relative_humidity_2m:  h.relative_humidity_2m[i],
+        weather_code:          h.weather_code[i],
+        visibility:            h.visibility[i],
+        wind_speed_10m:        h.wind_speed_10m[i],
+        wind_gusts_10m:        h.wind_gusts_10m[i],
+        wind_direction_10m:    h.wind_direction_10m[i],
+        rain:                  h.precipitation[i] || 0,
+        showers:               h.showers[i]       || 0,
+        precip_prob:           h.precipitation_probability?.[i] ?? null,
+        snowfall:              h.snowfall[i],
+        snow_depth:            h.snow_depth[i],
+        shortwave_radiation:   h.shortwave_radiation[i],
+        direct_radiation:      h.direct_radiation[i],
+        diffuse_radiation:     h.diffuse_radiation[i],
+        dew_point_2m:          h.dew_point_2m[i],
+        runoff:                h.runoff[i],
+        cloud_cover:           h.cloud_cover[i],
+        cloud_cover_low:       h.cloud_cover_low[i],
+        cloud_cover_mid:       h.cloud_cover_mid[i],
+        cloud_cover_high:      h.cloud_cover_high[i],
     }));
 
-// ----- 2️⃣ Финальный renderGraphs -----
-function renderGraphs(hours, h) {
-    const container = document.getElementById("graphs");
-    if(!hours || !h.time || hours.length === 0 || h.time.length === 0){
-        container.innerHTML = "<p>Данные ещё не загружены.</p>";
-        return;
-    }
-    container.innerHTML = "";
-
-    const graphs = [
-        {data: hours.map(x=>x.temperature_2m), color:"#ff8f00", unit:"°", title:"Температура"},
-        {data: hours.map(x=>x.pressure_msl/1), color:"#4aa3ff", unit:"гПа", title:"Давление"},
-        {data: hours.map(x=>x.relative_humidity_2m), color:"#00bcd4", unit:"%", title:"Влажность"},
-        {data: hours.map(x=>x.wind_speed_10m), color:"#8bc34a", unit:"м/с", title:"Скорость ветра"},
-        {data: hours.map(x=>x.rain), color:"#448aff", unit:"мм/ч", title:"Осадки"},
-    ];
-
-    const hoursToShow = 24 * (forecastDays-1);
-    const nowTime = new Date().getTime();
+    // --- График ---
+    const nowTime    = Date.now();
     const timesDates = h.time.map(t => new Date(t));
+    const hoursToShow = 24 * (forecastDays - 1);
 
-    function getSlice(data){
     let startIndex = timesDates.findIndex(t => t.getTime() >= nowTime);
     if(startIndex === -1) startIndex = 0;
-
     startIndex = Math.max(0, startIndex - 1);
+    const endIndex = Math.min(startIndex + hoursToShow, hours.length);
 
-    let endIndex = Math.min(startIndex + hoursToShow, data.length);
-    return {
-        data: data.slice(startIndex, endIndex),
-        time: h.time.slice(startIndex, endIndex)
-    };
-}
+    _fcHours = hours.slice(startIndex, endIndex);
+    _fcTimes = h.time.slice(startIndex, endIndex);
 
-    graphs.forEach((g, i) => {
-        const slice = getSlice(g.data);
+    buildFcParamRow();
+    renderForecastChart(_fcHours, _fcTimes);
 
-const graphHTML = createGraph(
-    slice.data,
-    slice.time,
-    g.color,
-    hoursToShow,
-    i+1
-);
+// --- Почасовой прогноз ---
+    const nowHour  = new Date().getHours();
+    const next24   = hours.slice(nowHour, nowHour + 24 * (forecastDays - 1));
+    const days     = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
 
-const statsHTML = createStatsTable(
-    slice.data,
-    g.unit,
-    g.title
-);
-        const wrapper = document.createElement("div");
-        wrapper.style.display = "flex";
-        wrapper.style.flexDirection = "column";
-        wrapper.style.gap = "4px";
-        wrapper.innerHTML = graphHTML + statsHTML;
-
-        container.appendChild(wrapper);
-    });
-}
-
-    // --- Графики с таблицами ---
- //   document.getElementById("graphs").innerHTML =
-   //     createGraph(hours.map(x=>x.temperature_2m), h.time, "#ff8f00", 24, 1) + createStatsTable(hours.map(x=>x.temperature_2m),"°","Температура") +
-    //    createGraph(hours.map(x=>x.pressure_msl/1), h.time, "#4aa3ff", 24, 2) + createStatsTable(hours.map(x=>x.pressure_msl/1), "гПа","Давление") +
-     //   createGraph(hours.map(x=>x.relative_humidity_2m), h.time, "#00bcd4",24, 3) + createStatsTable(hours.map(x=>x.relative_humidity_2m), "%","Влажность") +
-    //    createGraph(hours.map(x=>x.wind_speed_10m), h.time, "#8bc34a", 24, 4) + createStatsTable(hours.map(x=>x.wind_speed_10m), "м/с","Скорость ветра") +
-   //     createGraph(hours.map(x=>x.rain), h.time, "#448aff", 24, 5) + createStatsTable(hours.map(x=>x.rain), "мм/ч","Осадки");
-        
-     // ----- 3️⃣ Вызов функции после загрузки данных -----
-if(hours && h && h.time) {
-    renderGraphs(hours, h);
-}   
-
-// расшифровка погоды
-function weatherCode(code, hour, cloud=0){
-    const night = (hour >= 21 || hour < 6);
-
-    const icon = {
-        clear: night ? "🌙" : "☀️",
-        few: night ? "🌙☁️" : "🌤️",
-        scattered: "⛅",
-        broken: "☁️",
-        fog: "🌫️",
-
-        drizzleLight:"🌦️",
-        drizzle:"🌦️",
-        drizzleHeavy:"🌧️",
-
-        rainLight:"🌦️",
-        rain:"🌧️",
-        rainHeavy:"🌧️🌧️",
-        freezingRainLight:"🌧️❄️",
-        freezingRainHeavy:"🌧️❄️❄️",
-
-        snowLight:"🌨️",
-        snow:"❄️",
-        snowHeavy:"❄️❄️",
-        snowGrains:"🌨️❄️",
-
-        showersLight:"🌦️",
-        showersModerate:"🌧️",
-        showersHeavy:"🌧️🌧️",
-
-        storm:"⛈️"
-    };
-
-    let text="";
-    let ico="";
-
-    switch(code){
-        case 0: // ясно
-        case 1: // небольшая облачность
-        case 2: // переменная облачность
-        case 3: // пасмурно
-            if(cloud < 10){text="Ясно"; ico=icon.clear;}
-            else if(cloud < 30){text="Небольшая облачность"; ico=icon.few;}
-            else if(cloud < 60){text="Переменная облачность"; ico=icon.scattered;}
-            else{text="Облачно"; ico=icon.broken;}
-            break;
-
-        // туман
-        case 45: case 48: text="Туман"; ico=icon.fog; break;
-
-        // морось
-        case 51: text="Слабая морось"; ico=icon.drizzleLight; break;
-        case 53: text="Морось"; ico=icon.drizzle; break;
-        case 55: text="Сильная морось"; ico=icon.drizzleHeavy; break;
-
-        // дождь
-        case 61: text="Лёгкий дождь"; ico=icon.rainLight; break;
-        case 63: text="Дождь"; ico=icon.rain; break;
-        case 65: text="Сильный дождь"; ico=icon.rainHeavy; break;
-
-        // замерзающий дождь
-        case 66: text="Лёгкий замерзающий дождь"; ico=icon.freezingRainLight; break;
-        case 67: text="Сильный замерзающий дождь"; ico=icon.freezingRainHeavy; break;
-
-        // снег
-        case 71: text="Лёгкий снег"; ico=icon.snowLight; break;
-        case 73: text="Снег"; ico=icon.snow; break;
-        case 75: text="Сильный снег"; ico=icon.snowHeavy; break;
-        case 77: text="Снежные крупинки"; ico=icon.snowGrains; break;
-
-        // ливни
-        case 80: text="Ливни слабые"; ico=icon.showersLight; break;
-        case 81: text="Ливни умеренные"; ico=icon.showersModerate; break;
-        case 82: text="Ливни сильные"; ico=icon.showersHeavy; break;
-
-        // снежные ливни
-        case 85: text="Слабый снежный ливень"; ico=icon.snowLight; break;
-        case 86: text="Сильный снежный ливень"; ico=icon.snowHeavy; break;
-
-        // грозы
-        case 95: text="Гроза"; ico=icon.storm; break;
-        case 96: text="Гроза с дождём слабая"; ico=icon.storm; break;
-        case 99: text="Гроза с дождём сильная"; ico=icon.storm; break;
-
-        default: text="Неизвестно"; ico="❓"; break;
+    const tColors = [
+        [62,200,255],[157,214,255],[95,224,143],[255,216,77],[255,107,107]
+    ];
+    function lerpRgb(norm){
+        const seg = (tColors.length - 1) * norm;
+        const i0  = Math.min(Math.floor(seg), tColors.length - 2);
+        const f   = seg - i0;
+        const a   = tColors[i0], b = tColors[i0+1];
+        return [Math.round(a[0]+(b[0]-a[0])*f), Math.round(a[1]+(b[1]-a[1])*f), Math.round(a[2]+(b[2]-a[2])*f)];
     }
 
-    return {text, icon: ico};
-}
+    let html = "";
+    next24.forEach((h, i) => {
+        const d         = new Date(h.time);
+        const hr        = d.getHours();
+        const w         = weatherCode(h.weather_code, hr, h.cloud_cover, h.rain, h.snowfall);
+        const { comfort, color: c } = comfortLevel(h);
+        const isNight   = hr < 6 || hr >= 23;
+        const isCurrent = i === 0;
 
-function comfortLevel(h){
-    const temp = h.apparent_temperature;
-    const wind = h.wind_speed_10m;
-    const humidity = h.relative_humidity_2m;
-    const rain = h.rain + h.showers;
-    const snow = h.snowfall;
-    const sun = h.shortwave_radiation;
-    const cloud = h.cloud_cover;
-    const storm = (h.weather_code >= 95); // гроза
+        if(i === 0 || days[d.getDay()] !== days[new Date(next24[i-1].time).getDay()])
+            html += `<div class="day-header">${days[d.getDay()]}, ${d.getDate()}</div>`;
 
-    let comfort = "Комфортно";
-    let color = "#43A047";
+        // Тепловой фон
+        const t      = h.temperature_2m;
+        const tNorm  = Math.max(0, Math.min(1, (t + 20) / 60));
+        const [r,g,b2] = lerpRgb(tNorm);
+        const rowBg  = `rgba(${r},${g},${b2},${isNight ? 0.03 : 0.08})`;
 
-    // --- базовая температура ---
-    if(temp < -5) { comfort = "Очень холодно"; color="#1976D2"; }
-    else if(temp < 0) { comfort = "Холодно"; color="#4FC3F7"; }
-    else if(temp < 10) { comfort = wind>5 ? "Пронизывающий ветер" : "Прохладно"; color="#81D4FA"; }
-    else if(temp < 18) { comfort = wind>7 ? "Ветрено" : "Немного прохладно"; color="#AED581"; }
-    else if(temp < 26) { comfort = "Комфортно"; color="#43A047"; }
-    else if(temp < 32) { comfort = sun>500 ? "Жарко на солнце" : "Тепло"; color="#FFB300"; }
-    else { comfort = "Жарко"; color="#E53935"; }
+        // Стрелка ветра (откуда дует → +180° = куда дует)
+        const windDeg = h.wind_direction_10m ?? 0;
+        const windHtml = `
+            <div style="text-align:center;">
+                <div style="font-size:15px;"><i style="display:inline-block;transform:rotate(${windDeg+180}deg);font-style:normal;">↑</i></div>
+                <div style="font-size:12px;font-weight:600;">${Math.round(h.wind_speed_10m)}<span style="font-size:9px;color:#777;"> м/с</span></div>
+            </div>`;
 
-    // --- осадки и снег ---
-    if(rain > 0) { comfort += " с дождём"; color="#448AFF"; }
-    if(snow > 0) { comfort += " со снегом"; color="#90CAF9"; }
+        const precip    = h.rain + h.showers;
+        const precipPct = Math.min(100, precip / 10 * 100);
+        const probPct   = h.precip_prob ?? 0;
+        const cloudPct  = h.cloud_cover ?? 0;
+        const cL = h.cloud_cover_low  ?? 0;
+        const cM = h.cloud_cover_mid  ?? 0;
+        const cH = h.cloud_cover_high ?? 0;
 
-    // --- высокая влажность ---
-    if(humidity > 80 && temp>20) { comfort += " и душно"; color="#FF7043"; }
-
-    // --- облачность снижает солнечный дискомфорт ---
-    if(sun>400 && cloud>70) { comfort += " (облачно, солнце скрыто)"; }
-
-    // --- гроза / сильные явления ---
-    if(storm) { comfort += " ⚡ Гроза!"; color="#D32F2F"; }
-
-    // --- можно добавить дополнительные параметры, если нужно ---
-    // например CAPE, CIN, UV и т.д.
-
-    return {comfort, color};
-}
-
-    // --- Почасовой прогноз ---
-    const now=new Date().getHours();
-    const next24=hours.slice(now, now+24*(forecastDays-1));
-    const days=["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
-    let html="";
-    next24.forEach((h,i)=>{
-        const d=new Date(h.time);
-        
-        const w = weatherCode(
-    h.weather_code,
-    d.getHours(),
-    h.cloud_cover,
-    h.rain,
-    h.snowfall
-);
-
-        if(i===0 || days[d.getDay()]!==days[new Date(next24[i-1].time).getDay()]){
-            html+=`<div class="day-header">${days[d.getDay()]}, ${d.getDate()}</div>`;
+        function bar(pct, color, bg="#222"){
+            return `<div style="flex:1;height:4px;background:${bg};border-radius:3px;overflow:hidden;">
+                <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;"></div>
+            </div>`;
         }
-        let {comfort, color:c} = comfortLevel(h);        html+=`
+        function barRow(label, pct, color, valStr, bg="#222"){
+            return `<div style="display:flex;align-items:center;gap:8px;">
+                <span class="label" style="width:80px;flex-shrink:0;">${label}</span>
+                ${bar(pct, color, bg)}
+                <span style="font-size:11px;color:#777;width:38px;text-align:right;flex-shrink:0;">${valStr}</span>
+            </div>`;
+        }
 
-        <div class="row">
-            <div class="indicator-line" style="background:${c}"></div>
+        html += `
+        <div class="row" style="background:${rowBg};opacity:${isNight?0.6:1};${isCurrent?'border-color:#4fc3f7;':''}">
             <div class="summary" onclick="toggle(this)">
-                <div style="width:15%">${d.getHours()}:00</div>
-                <div style="width:20%;font-size:1.9em;text-align:center">${w.icon}</div>
-                <div style="width:25%;text-align:center;font-weight:bold;color:${h.temperature_2m>0?"#FF8F00":"#00E5FF"}">${h.temperature_2m.toFixed(1)}°</div>
-                <div style="width:15%">💨${Math.round(h.wind_speed_10m)}</div>
-                <div style="width:15%;text-align:right">☔${Math.round(h.rain+h.showers)}</div>
+                <div class="indicator-line" style="background:${c};"></div>
+                <div style="width:16%;font-size:13px;color:${isCurrent?'#4fc3f7':'#aaa'};font-weight:${isCurrent?700:400};">${hr}:00</div>
+                <div style="width:18%;font-size:1.6em;text-align:center;">${w.icon}</div>
+                <div style="width:32%;text-align:center;font-weight:800;font-size:15px;color:${t>0?'#ff8f00':'#00e5ff'}">${t.toFixed(1)}°</div>
+                <div style="width:34%;">${windHtml}</div>
             </div>
-            <div class="details">
-                <div class="status-line" style="color:${c}">${w.text} • ${comfort}</div>
-                <div class="grid-container">
-                    <div><span class="label">Ощущается</span><div class="val">${h.apparent_temperature.toFixed(1)}°</div></div>
-                    <div><span class="label">Влажность</span><div class="val">${h.relative_humidity_2m}%</div></div>
-                    <div><span class="label">Ветер</span><div class="val">${windDir(h.wind_direction_10m)} ${Math.round(h.wind_speed_10m)} м/с</div></div>
-                    <div><span class="label">Порывы</span><div class="val">${Math.round(h.wind_gusts_10m)} м/с</div></div>
-                    <div><span class="label">Давление</span><div class="val">${(h.pressure_msl/1).toFixed(1)} гПа</div></div>
-                    <div><span class="label">Видимость</span><div class="val">${(h.visibility/1000).toFixed(0)} км</div></div>
-                    <div><span class="label">Облачность</span><div class="val">${h.cloud_cover}%</div></div>
-                    <div><span class="label">Слои L/M/H</span><div class="val">${h.cloud_cover_low}/${h.cloud_cover_mid}/${h.cloud_cover_high}</div></div>
-                    <div><span class="label">Снег</span><div class="val">${h.snowfall} мм</div></div>
-                    <div><span class="label">Покров</span><div class="val">${h.snow_depth} см</div></div>
+            <div class="details-body"><div>
+                <div class="status-line" style="color:${c}">${w.text} · ${comfort}</div>
+
+                <!-- БЛОК: Осадки -->
+                <div style="padding:10px 0 6px;border-top:1px solid #222;display:flex;flex-direction:column;gap:5px;">
+                    <div style="font-size:11px;color:#555;margin-bottom:2px;font-weight:600;letter-spacing:0.04em;">ОСАДКИ</div>
+                    ${barRow("Кол-во", precipPct, "#4a90d9", precip > 0 ? precip.toFixed(1)+" мм/ч" : "0 мм/ч", "#1e2a3a")}
+                    ${barRow("Вер-ть", probPct, "#5b8fc9", probPct + "%")}
                 </div>
-            </div>
+
+                <!-- БЛОК: Облачность -->
+                <div style="padding:8px 0 6px;border-top:1px solid #222;display:flex;flex-direction:column;gap:5px;">
+                    <div style="font-size:11px;color:#555;margin-bottom:2px;font-weight:600;letter-spacing:0.04em;">ОБЛАЧНОСТЬ</div>
+                    ${barRow("Общая",       cloudPct, "#666", cloudPct + "%")}
+                    ${barRow("Высокие (H)", cH, "#dde8ff", cH + "%")}
+                    ${barRow("Средние (M)", cM, "#aab8cc", cM + "%")}
+                    ${barRow("Низкие (L)",  cL, "#7ec8ff", cL + "%")}
+                    
+                </div>
+
+                <!-- БЛОК: Параметры -->
+                <div style="padding:8px 0 4px;border-top:1px solid #222;">
+                    <div style="font-size:11px;color:#555;margin-bottom:6px;font-weight:600;letter-spacing:0.04em;">ПАРАМЕТРЫ</div>
+                    <div class="grid-container">
+                        <div><span class="label">Ощущается</span><div class="val">${h.apparent_temperature.toFixed(1)}°</div></div>
+                        <div><span class="label">Влажность</span><div class="val">${h.relative_humidity_2m}%</div></div>
+                        <div><span class="label">Ветер</span><div class="val">${windDir(windDeg)} ${Math.round(h.wind_speed_10m)} м/с</div></div>
+                        <div><span class="label">Порывы</span><div class="val">${Math.round(h.wind_gusts_10m)} м/с</div></div>
+                        <div><span class="label">Давление</span><div class="val">${h.pressure_msl.toFixed(1)} гПа</div></div>
+                        <div><span class="label">Видимость</span><div class="val">${(h.visibility/1000).toFixed(0)} км</div></div>
+                        ${h.snowfall > 0 ? `<div><span class="label">Снег</span><div class="val">${h.snowfall} мм</div></div>` : ""}
+                        ${h.snow_depth > 0 ? `<div><span class="label">Покров</span><div class="val">${h.snow_depth} см</div></div>` : ""}
+                    </div>
+                </div>
+
+            </div></div>
         </div>`;
     });
-    document.getElementById("forecast").innerHTML=html;
+    document.getElementById("forecast").innerHTML = html;
 }
 
 load();

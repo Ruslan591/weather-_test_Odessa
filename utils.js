@@ -475,3 +475,18 @@ function logTo(logId, msg){
     line.textContent = msg;
     el.appendChild(line);
 }
+
+/* -------------------------
+   PWS парсинг
+------------------------- */
+function parsePWSOne(obs){
+    const m = obs.metric||{}, km=v=>v!=null?Math.round(v/3.6*10)/10:null;
+    return {
+        stationID:obs.stationID||null, softwareType:obs.softwareType||null,
+        obsTimeLocal:obs.obsTimeLocal||null, lat:obs.lat??null, lon:obs.lon??null, elev:m.elev??null,
+        temp:m.temp??null, dewpt:m.dewpt??null, heatIndex:m.heatIndex??null, windChill:m.windChill??null,
+        pressure:m.pressure??null, precipRate:m.precipRate??null, precipTotal:m.precipTotal??null,
+        windDir:obs.winddir??null, humidity:obs.humidity??null, uv:obs.uv??null,
+        solarRad:obs.solarRadiation??null, windSpeedMs:km(m.windSpeed), windGustMs:km(m.windGust),
+    };
+}

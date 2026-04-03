@@ -631,29 +631,48 @@ details[open] summary::before{
 
 
 
+
+
 /* =========================
-   СЕТКА 2×2 ИНДИКАТОРОВ
+   ИНДИКАТОРЫ
 ========================= */
 .ind-grid-2x2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    margin: 12px 0;
 }
 
 .ind-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px 4px 6px;
+    padding: 6px 4px 4px;
     background: #191919;
     border-radius: 12px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.ind-card:active { opacity: 0.7; }
+
+/* SVG масштабируется до ширины ячейки */
+.ind-card svg {
+    width: 100% !important;
+    height: auto !important;
 }
 
 .ind-title {
     font-size: 11px;
     color: #777;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 4px;
 }
 
 .ind-sub {
@@ -670,6 +689,14 @@ details[open] summary::before{
     margin-top: 4px;
 }
 
+/* Оверлей fullscreen */
+#indOverlay {
+    cursor: pointer;
+}
+#indOverlay svg {
+    filter: drop-shadow(0 0 20px rgba(0,0,0,0.8));
+}
+
 /* =========================
    PWS СТРАНИЦА
 ========================= */
@@ -677,34 +704,193 @@ details[open] summary::before{
     background: #1e1e1e;
     border: 1px solid #2e2e2e;
     border-radius: 14px;
-    padding: 12px 14px;
-    margin-bottom: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
 }
-
 .pws-station-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
-
-.pws-fields {
-    margin: 6px 0 4px;
-}
-
+.pws-fields { margin: 6px 0 4px; }
 .pws-calib {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #272727;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #252525;
     flex-wrap: wrap;
 }
 
-/* tempClass для SVG fill */
-.tempCold { fill: #7ec8ff !important; color: #7ec8ff; }
-.tempCool { fill: #9dd6ff !important; color: #9dd6ff; }
-.tempMild { fill: #8ad68a !important; color: #8ad68a; }
-.tempWarm { fill: #ffbf66 !important; color: #ffbf66; }
-.tempHot  { fill: #ff6b6b !important; color: #ff6b6b; }
+/* =========================
+   SELECT СТАНЦИИ
+========================= */
+.station-select-wrap {
+    padding: 10px 14px;
+    background: #1e1e1e;
+    border: 1px solid #2e2e2e;
+    border-radius: 14px;
+    margin-bottom: 14px;
+}
+.station-select-wrap select {
+    width: 100%;
+    background: #2a2a2a;
+    color: #eee;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+}
+
+/* tempClass */
+.tempCold { fill: #7ec8ff; color: #7ec8ff; }
+.tempCool { fill: #9dd6ff; color: #9dd6ff; }
+.tempMild { fill: #8ad68a; color: #8ad68a; }
+.tempWarm { fill: #ffbf66; color: #ffbf66; }
+.tempHot  { fill: #ff6b6b; color: #ff6b6b; }
+
+/* =========================
+   АНИМАЦИЯ ШТОРКИ DETAILS
+========================= */
+details .details-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.35s ease;
+}
+
+details[open] .details-body {
+    grid-template-rows: 1fr;
+}
+
+details .details-body > div {
+    overflow: hidden;
+}
+
+/* =========================
+   ИСТОРИЯ / ГРАФИК
+========================= */
+
+/* uPlot переопределения */
+.hist-uplot {
+    background: transparent !important;
+}
+.hist-uplot .u-cursor-x {
+    border-left: 1px solid rgba(255,255,255,0.18) !important;
+}
+.hist-uplot .u-cursor-pt {
+    border-radius: 50% !important;
+}
+
+/* Кнопки параметра */
+.hist-param-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.hist-param-btn {
+    width: auto !important;
+    padding: 5px 11px !important;
+    font-size: 12px !important;
+    border-radius: 20px !important;
+    background: #232323 !important;
+    color: #888 !important;
+    border: 1px solid #2e2e2e !important;
+    transition: 0.15s !important;
+    white-space: nowrap;
+}
+
+.hist-param-btn:hover {
+    color: #ccc !important;
+    background: #2a2a2a !important;
+}
+
+.hist-param-btn.active {
+    background: #1a1a1a !important;
+    color: var(--c, #fff) !important;
+    border-color: var(--c, #555) !important;
+    box-shadow: 0 0 0 1px var(--c, #555) inset;
+}
+
+/* Кнопки периода */
+.hist-period-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 3px;
+}
+
+.hist-period-btn {
+    width: auto !important;
+    flex: 1;
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #666 !important;
+    border: none !important;
+    transition: 0.15s !important;
+    white-space: nowrap;
+}
+
+.hist-period-btn:hover {
+    color: #aaa !important;
+    background: #252525 !important;
+}
+
+.hist-period-btn.active {
+    background: #2e2e2e !important;
+    color: #eee !important;
+}
+
+/* Статистика */
+.hist-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+@media (max-width: 520px) {
+    .hist-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.hist-stat-card {
+    background: #191919;
+    border: 1px solid #272727;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+}
+
+.hist-stat-label {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.hist-stat-value {
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 3px;
+}
+
+.hist-stat-time {
+    font-size: 10px;
+    color: #555;
+}

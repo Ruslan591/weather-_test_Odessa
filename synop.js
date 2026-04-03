@@ -200,20 +200,18 @@ function parseSynop(line){
         const c = g.replace(/=+$/, "");
         if(!c || c.length < 4) continue;
 
-        // 1EsnT'gT'g — мин. температура на поверхности почвы/травы
-        // E (c[1]) — состояние поверхности (0-9), sn (c[2]) — знак, T'gT'g — °C
-        if(/^1[0-9][01]\d{2}$/.test(c)){
-            surfStateCode555 = safeNum(c[1]);
-            const sn  = c[2] === "1" ? -1 : 1;
-            const val = parseInt(c.slice(3, 5), 10);
-            if(Number.isFinite(val)) tempMinSurface = sn * val;
-        }
-
-        // 1/fff — порыв ветра (слэш на месте E — только такой вариант)
-        else if(/^1\/\d{3}$/.test(c)){
-            const val = parseInt(c.slice(2), 10);
-            if(Number.isFinite(val)) maxGust555 = val;
-        }
+        // 1EsnTgTg — состояние поверхности + температура почвы (целые °C)
+if(/^1[0-9][01]\d{2}$/.test(c)){
+    surfStateCode555 = safeNum(c[1]);
+    const sn  = c[2] === "1" ? -1 : 1;
+    const val = parseInt(c.slice(3, 5), 10);
+    if(Number.isFinite(val)) tempMinSurface = sn * val;
+}
+// 1/TgTgTg — только температура почвы, состояние не наблюдалось
+else if(/^1\/\d{3}$/.test(c)){
+    const val = parseInt(c.slice(2), 10);
+    if(Number.isFinite(val)) tempMinSurface = val;
+}
 
         // 2snTnTnTn — минимальная температура воздуха за ночь (десятые °C)
         else if(/^2[01]\d{3}$/.test(c)){
@@ -473,20 +471,13 @@ function renderSynop(d){
     const rows555 = [
         // 1EsnT'gT'g — мин. т° поверхности почвы/травы (целые °C)
         d.tempMinSurface != null ? row(
-            "Т° подстилающей поверхности",
-            fmt0(d.tempMinSurface,"°C") + groundStateLabel(d.surfStateCode555)
-        ) : "",
-        // 2snTnTnTn — мин. т° воздуха за ночь
-        d.sec555TempMin  != null ? row("Мин. т° воздуха за ночь",  fmt1(d.sec555TempMin,"°C")) : "",
-        // 3EsnTgTg — т° поверхности почвы (целые °C)
-        d.groundTemp     != null ? row(
-            "Т° поверхности почвы",
-            fmt0(d.groundTemp,"°C") + groundStateLabel(d.groundStateCode)
-        ) : "",
-        // 52snT2T2 — доп. т° воздуха на 2 м
-        d.sec555Temp2m   != null ? row("Т° воздуха на 2 м (доп.)", fmt1(d.sec555Temp2m,"°C")) : "",
-        // 1/fff — порыв ветра
-        d.maxGust555     != null ? row("Максимальный порыв ветра",  fmt0(d.maxGust555," м/с"))  : "",
+    "Т° поверхности почвы (травы)",
+    fmt0(d.tempMinSurface,"°C") + groundStateLabel(d.surfStateCode555)
+) : "",
+d.sec555TempMin  != null ? row("Мин. т° воздуха за ночь",  fmt1(d.sec555TempMin,"°C")) : "",
+d.sec555Temp2m   != null ? row("Т° воздуха на 2 м (доп.)", fmt1(d.sec555Temp2m,"°C")) : "",
+// 907ff — порыв ветра
+d.maxGust555     != null ? row("Максимальный порыв ветра",  fmt0(d.maxGust555," м/с"))  : "",
         // 6RRRtR — суточные осадки
         d.dailyPrecip    != null ? row("Суточные осадки",           fmt0(d.dailyPrecip," мм"))   : "",
         ...(d.phenomCodes || []).filter(Boolean).map((pc, i) =>
@@ -523,6 +514,7 @@ function renderSynop(d){
             ${humidityIndicatorSvg(humidity)}
             ${windIndicatorSvg(d)}
             ${pressureIndicatorSvg(d)}
+            
             
         </div>
 
@@ -673,6 +665,14 @@ async function loadSynopUI(){
         logTo("synopLog","📥 Ответ получен, разбор групп и секций");
         renderSynop(synop);
         logTo("synopLog","✅ SYNOP успешно обновлён");
+        // Сохраняем давление QNH и время для кнопки коррекции PWS
+        if(synop.seaPressure != null){
+            localStorage.setItem("synopLastPressure", JSON.stringify({
+                pressure: synop.seaPressure,
+                ts:       Date.now(),
+                yyggi:    synop.yyggi || null
+            }));
+        }
         // Автокалибровка PWS по давлению SYNOP (только в часы наблюдений)
         if(typeof calibratePWSBySynop === "function"){
             calibratePWSBySynop(synop.seaPressure);

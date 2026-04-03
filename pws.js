@@ -264,3 +264,68 @@ function startPWSAutoRefresh(){
 function stopPWSAutoRefresh(){
     if(_pwsTimer){ clearInterval(_pwsTimer); _pwsTimer = null; }
 }
+
+/* =========================================================
+   ИСТОРИЯ PWS
+========================================================= */
+
+// Все наблюдения за сегодня (каждые ~5 мин)
+async function loadPWSToday(stationId) {
+    const url =
+        `https://api.weather.com/v2/pws/observations/all/1day` +
+        `?stationId=${encodeURIComponent(stationId)}` +
+        `&format=json&units=m&numericPrecision=decimal` +
+        `&apiKey=${WU_KEYS[0]}`;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    if (!data?.observations?.length) throw new Error("Нет данных");
+    return data.observations.map(parsePWSOne);
+}
+
+// Почасовые данные за последние 7 дней
+async function loadPWSHourly7Day(stationId) {
+    const url =
+        `https://api.weather.com/v2/pws/observations/hourly/7day` +
+        `?stationId=${encodeURIComponent(stationId)}` +
+        `&format=json&units=m&numericPrecision=decimal` +
+        `&apiKey=${WU_KEYS[0]}`;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    if (!data?.observations?.length) throw new Error("Нет данных");
+    return data.observations.map(parsePWSOne);
+}
+
+// История за конкретный день (все наблюдения)
+async function loadPWSHistoryDay(stationId, dateYMD) {
+    // dateYMD — строка вида "20250331"
+    const url =
+        `https://api.weather.com/v2/pws/history/all` +
+        `?stationId=${encodeURIComponent(stationId)}` +
+        `&format=json&units=m&numericPrecision=decimal` +
+        `&date=${dateYMD}` +
+        `&apiKey=${WU_KEYS[0]}`;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    if (!data?.observations?.length) throw new Error("Нет данных");
+    return data.observations.map(parsePWSOne);
+}
+
+// Дневные агрегаты (min/max/avg) за диапазон дат
+async function loadPWSDailyStats(stationId, startYMD, endYMD) {
+    // startYMD, endYMD — "20250301", "20250331"
+    const url =
+        `https://api.weather.com/v2/pws/history/daily` +
+        `?stationId=${encodeURIComponent(stationId)}` +
+        `&format=json&units=m&numericPrecision=decimal` +
+        `&startDate=${startYMD}&endDate=${endYMD}` +
+        `&apiKey=${WU_KEYS[0]}`;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    if (!data?.observations?.length) throw new Error("Нет данных");
+    // Агрегаты: metric.tempHigh, tempLow, tempAvg, windspeedHigh, windgustHigh, precipTotal и т.д.
+    return data.observations;
+}
