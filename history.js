@@ -12,6 +12,7 @@ const HIST_PARAMS = {
     pressure: { label:"Давление",     unit:" гПа",  color:"#58aeff", field:"pressure",    stroke:"#58aeff", fill:"rgba(88,174,255,0.10)"  },
     humidity: { label:"Влажность",    unit:"%",     color:"#5fe08f", field:"humidity",    stroke:"#5fe08f", fill:"rgba(95,224,143,0.10)"  },
     wind:     { label:"Ветер",        unit:" м/с",  color:"#ffd166", field:"windSpeedMs", stroke:"#ffd166", fill:"rgba(255,209,102,0.10)"  },
+    winddir:  { label:"Направление",  unit:"°",     color:"#74b9ff", field:"windDir",     stroke:"#74b9ff", fill:"rgba(116,185,255,0.10)"  },
     solar:    { label:"Радиация",     unit:" Вт/м²",color:"#ff9f43", field:"solarRad",    stroke:"#ff9f43", fill:"rgba(255,159,67,0.10)"   },
     uv:       { label:"УФ-индекс",   unit:"",      color:"#a29bfe", field:"uv",          stroke:"#a29bfe", fill:"rgba(162,155,254,0.10)"  },
 };
@@ -168,10 +169,10 @@ function histPrepare(obs, paramKey){
    РЕНДЕР uPlot
 ========================================================= */
 function histRenderChart(data, paramKey){
+    if(paramKey === "winddir") return histRenderChart_WindDir(data);
     const engine = (typeof HIST_ENGINE !== "undefined") ? HIST_ENGINE : "uplot";
-    if(engine === "svg")     return histRenderChart_SVG(data, paramKey);
+    if(engine === "svg")    return histRenderChart_SVG(data, paramKey);
     if(engine === "chartjs") return histRenderChart_ChartJS(data, paramKey);
-    if(engine === "echarts") return histRenderChart_ECharts(data, paramKey);
     return histRenderChart_uPlot(data, paramKey);
 }
 
@@ -362,6 +363,130 @@ function histRenderChart_SVG(data, paramKey){
     _histChart = {
         destroy(){ wrap.innerHTML = ""; },
         setSize({ width }){ histRenderChart_SVG(data, paramKey); }
+    };
+}
+
+/* ── движок WindDir — scatter со стрелками ── */
+function histRenderChart_WindDir(data){
+    const cfg  = HIST_PARAMS["winddir"];
+    const wrap = document.getElementById("histChartWrap");
+    if(!wrap) return;
+
+    if(_histChart){ _histChart.destroy && _histChart.destroy(); _histChart = null; }
+
+    const { times, values, obs } = data;
+    if(!times.length){
+        wrap.innerHTML = `<div style="color:#666;text-align:center;padding:30px;">Нет данных</div>`;
+        return;
+    }
+
+    const W = wrap.clientWidth || 340, H = 220;
+    const pad = { t:10, r:10, b:36, l:34 };
+    const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
+
+    const tMin = Math.min(...times), tMax = Math.max(...times);
+    const px = t => pad.l + (t - tMin) / (tMax - tMin || 1) * iW;
+
+    // Румбы по кругу 0..360, Y-ось: 0 внизу → 360 вверху
+    const py = v => pad.t + (1 - v / 360) * iH;
+
+    // Метки Y — 8 румбов
+    const yRumbs = [
+        [0,"С"],[45,"СВ"],[90,"В"],[135,"ЮВ"],
+        [180,"Ю"],[225,"ЮЗ"],[270,"З"],[315,"СЗ"],[360,"С"]
+    ];
+    let yGrid = "", yLabels = "";
+    for(const [deg, lbl] of yRumbs){
+        const y = py(deg);
+        yGrid   += `<line x1="${pad.l}" y1="${y}" x2="${pad.l+iW}" y2="${y}" stroke="#252525" stroke-width="1"/>`;
+        yLabels += `<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="#555">${lbl}</text>`;
+    }
+
+    // Метки X
+    let xLabels = "";
+    const xStep = Math.ceil(times.length / 6);
+    times.forEach((t, i) => {
+        if(i % xStep !== 0) return;
+        const x = px(t);
+        const d = new Date(t * 1000);
+        const lbl = d.getDate() === new Date(times[0]*1000).getDate()
+            ? d.toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"})
+            : d.toLocaleDateString("ru-RU", {day:"2-digit", month:"2-digit"});
+        xLabels += `<text x="${x}" y="${H-8}" text-anchor="middle" font-size="9" fill="#555">${lbl}</text>`;
+    });
+
+    // Стрелки-точки: каждая наблюдение = маленькая стрелка повёрнутая по направлению
+    const W_STOPS = [
+        {offset:0,    color:"#7ec8ff"},
+        {offset:0.13, color:"#67d7a7"},
+        {offset:0.36, color:"#ffd166"},
+        {offset:0.57, color:"#ff9f5c"},
+        {offset:1,    color:"#ff6b6b"},
+    ];
+    const vMax = 25;
+
+    let arrows = "";
+    // Определяем шаг — если точек много, рисуем не все
+    const step = Math.max(1, Math.floor(times.length / 80));
+
+    times.forEach((t, i) => {
+        if(i % step !== 0) return;
+        const dir = values[i];
+        if(dir == null || isNaN(dir)) return;
+
+        const spd = obs[i]?.windSpeedMs ?? null;
+        const col = spd != null
+            ? gradientColor(W_STOPS, Math.min(spd, vMax) / vMax)
+            : cfg.color;
+
+        const x = px(t);
+        const y = py(dir);
+        const rot = dir + 180; // стрелка «откуда дует»
+
+        // Маленькая стрелка 7px
+        arrows += `<g transform="translate(${x},${y}) rotate(${rot})">
+            <line x1="0" y1="-5" x2="0" y2="5" stroke="${col}" stroke-width="1.5" stroke-linecap="round"/>
+            <polyline points="-2.5,-1 0,-5 2.5,-1" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round"/>
+        </g>`;
+    });
+
+    // Соединительная линия (тонкая, пунктир) — но только если точек немного
+    let connectLine = "";
+    if(times.length <= 100){
+        const pts = [];
+        times.forEach((t, i) => {
+            if(values[i] == null || isNaN(values[i])) return;
+            pts.push(`${px(t)},${py(values[i])}`);
+        });
+        if(pts.length > 1)
+            connectLine = `<polyline points="${pts.join(" ")}" fill="none" stroke="${cfg.color}" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="3 3"/>`;
+    }
+
+    wrap.innerHTML = `
+    <svg width="${W}" height="${H}" style="display:block;">
+        ${yGrid}${yLabels}${xLabels}
+        ${connectLine}
+        ${arrows}
+    </svg>`;
+
+    // Тултип
+    const svg = wrap.querySelector("svg");
+    svg.addEventListener("mousemove", e => {
+        const rect = svg.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        let best = 0, bestDist = Infinity;
+        times.forEach((t, i) => {
+            if(values[i] == null) return;
+            const dist = Math.abs(px(t) - mx);
+            if(dist < bestDist){ bestDist = dist; best = i; }
+        });
+        histShowTooltip({ cursor:{ left: mx } }, best, data, "winddir");
+    });
+    svg.addEventListener("mouseleave", histHideTooltip);
+
+    _histChart = {
+        destroy(){ wrap.innerHTML = ""; },
+        setSize(){ histRenderChart_WindDir(data); }
     };
 }
 
@@ -654,6 +779,48 @@ function histRenderStats(data, paramKey){
 
     const vals = data.values.filter(v => v != null && !isNaN(v));
     if(!vals.length){ box.innerHTML = ""; return; }
+
+    // Специальная статистика для направления ветра
+    if(paramKey === "winddir"){
+        // Считаем доминирующий румб
+        const rumbCounts = {};
+        const rumbs = ["С","ССВ","СВ","ВСВ","В","ВЮВ","ЮВ","ЮЮВ","Ю","ЮЮЗ","ЮЗ","ЗЮЗ","З","ЗСЗ","СЗ","ССЗ"];
+        vals.forEach(v => {
+            const r = rumbs[Math.round(((v % 360) + 360) % 360 / 22.5) % 16];
+            rumbCounts[r] = (rumbCounts[r] || 0) + 1;
+        });
+        const dominant = Object.entries(rumbCounts).sort((a,b) => b[1]-a[1])[0];
+        // Среднее направление через векторное суммирование
+        let sinSum = 0, cosSum = 0;
+        vals.forEach(v => { sinSum += Math.sin(v * Math.PI/180); cosSum += Math.cos(v * Math.PI/180); });
+        const meanDeg = ((Math.atan2(sinSum/vals.length, cosSum/vals.length) * 180/Math.PI) + 360) % 360;
+        const meanRumb = rumbs[Math.round(meanDeg / 22.5) % 16];
+
+        box.innerHTML = `
+        <div class="hist-stats-grid">
+            <div class="hist-stat-card">
+                <div class="hist-stat-label">Доминирующий</div>
+                <div class="hist-stat-value" style="color:${cfg.color};">${dominant[0]}</div>
+                <div class="hist-stat-time">${dominant[1]} набл.</div>
+            </div>
+            <div class="hist-stat-card">
+                <div class="hist-stat-label">Среднее</div>
+                <div class="hist-stat-value" style="color:#ccc;">${meanRumb}</div>
+                <div class="hist-stat-time">${Math.round(meanDeg)}°</div>
+            </div>
+            <div class="hist-stat-card">
+                <div class="hist-stat-label">Мин. угол</div>
+                <div class="hist-stat-value" style="color:${cfg.color};">${Math.round(Math.min(...vals))}°</div>
+                <div class="hist-stat-time">${rumbs[Math.round(Math.min(...vals) / 22.5) % 16]}</div>
+            </div>
+            <div class="hist-stat-card">
+                <div class="hist-stat-label">Макс. угол</div>
+                <div class="hist-stat-value" style="color:${cfg.color};">${Math.round(Math.max(...vals))}°</div>
+                <div class="hist-stat-time">${rumbs[Math.round(Math.max(...vals) / 22.5) % 16]}</div>
+            </div>
+        </div>`;
+        return;
+    }
 
     const vMin  = Math.min(...vals);
     const vMax  = Math.max(...vals);
