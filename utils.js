@@ -244,6 +244,24 @@ function precipitationText(group1Indicator, group6){
     return `${amountText}, период: ${tText}`;
 }
 
+/* Расшифровка W1/W2 — прошедшая погода (таблица 4561 WMO, коды 0–9) */
+function synopPastWeatherText(code){
+    if(code == null) return "-";
+    const map = {
+        "0": "Ясно или малооблачно",
+        "1": "Облачно (переменная облачность)",
+        "2": "Пасмурно (сплошная облачность)",
+        "3": "Метель, пыльная буря или песчаная буря",
+        "4": "Туман или ледяной туман",
+        "5": "Морось",
+        "6": "Дождь",
+        "7": "Снег или дождь со снегом",
+        "8": "Ливень",
+        "9": "Гроза (с осадками или без)"
+    };
+    return map[String(code)] || `Код ${code}`;
+}
+
 function synopWeatherText(code){
     if(code == null) return " ";
     const map = {

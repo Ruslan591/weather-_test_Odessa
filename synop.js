@@ -56,7 +56,7 @@ function parseSynop(line){
     let stationPressure = null, seaPressure = null;
     let tendencyCode = null, tendencyValue = null;
     let precipGroup = null;
-    let weatherNow = null, weatherPast = null;
+    let weatherNow = null, weatherPast1 = null, weatherPast2 = null;
     let cloudGroup = null, cloudTotalOkta = null;
     let cloudLowCode = null, cloudMidCode = null, cloudHighCode = null;
 
@@ -111,9 +111,10 @@ function parseSynop(line){
         }
         else if(/^6\d{4}$/.test(g))        precipGroup = g;
         else if(/^7\d{4}$/.test(g)){
-            weatherNow  = g.slice(1,3);
-            weatherPast = g.slice(3,5);
-        }
+            weatherNow   = g.slice(1,3);
+            weatherPast1 = g[3];   // W1: погода за период от 2 до 1 часа до срока
+            weatherPast2 = g[4];   // W2: погода за последний час до срока
+}
         else if(/^8[\d/]{4}$/.test(g)){
             cloudGroup     = g;
             cloudTotalOkta = g[1] === "/" ? null : safeNum(g[1]);
@@ -266,7 +267,7 @@ else if(/^1\/\d{3}$/.test(c)){
         stationPressure, seaPressure,
         tendencyCode, tendencyValue,
         precipGroup,
-        weatherNow, weatherPast, weatherChange,
+        weatherNow, weatherPast1, weatherPast2, weatherChange,
         cloudGroup, cloudTotalOkta,
         cloudLowCode, cloudMidCode, cloudHighCode,
         totalCloud, lowCloudBase, visibility,
@@ -549,7 +550,8 @@ d.maxGust555     != null ? row("Максимальный порыв ветра",
                         ? ` ${d.tendencyValue > 0 ? "+" : ""}${d.tendencyValue.toFixed(1)} гПа`
                         : ""))}
                 ${row("Явления",           escapeHtml(wx) || "-")}
-                ${(d.weatherPast && d.weatherPast !== "00") ? row("Погода между сроками", escapeHtml(synopWeatherText(d.weatherPast))) : ""}
+                ${(d.weatherPast1 && d.weatherPast1 !== "0") ? row("Погода за период от 2 до 1 часа до срока (W1)", escapeHtml(synopPastWeatherText(d.weatherPast1))) : ""}
+                ${(d.weatherPast2 && d.weatherPast2 !== "0") ? row("Погода в течение последнего часа до срока (W2)", escapeHtml(synopPastWeatherText(d.weatherPast2))) : ""}
                 ${precipLine}
             </div>
 
