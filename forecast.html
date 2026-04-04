@@ -674,16 +674,45 @@ function weatherCode(code, hour, cloud, rain, snow){
 
 // --- уровень комфорта ---
 function comfortLevel(h){
-    const t = h.temperature_2m;
-    const w = h.wind_speed_10m;
-    const r = h.rain + h.showers;
-    if(r > 2)  return { comfort:"Дождливо",  color:"#4a90d9" };
-    if(t < -10) return { comfort:"Сильный мороз", color:"#7ec8ff" };
-    if(t < 0)  return { comfort:"Морозно",   color:"#9dd6ff" };
-    if(t < 10) return { comfort:"Прохладно", color:"#5fe08f" };
-    if(t > 30) return { comfort:"Жарко",     color:"#ff6b6b" };
-    if(w > 10) return { comfort:"Ветрено",   color:"#ffd166" };
-    return { comfort:"Комфортно", color:"#5fe08f" };
+    const t    = h.temperature_2m;
+    const feel = h.apparent_temperature;
+    const w    = h.wind_speed_10m;
+    const gust = h.wind_gusts_10m ?? w;
+    const r    = (h.rain ?? 0) + (h.showers ?? 0);
+    const snow = h.snowfall ?? 0;
+    const rh   = h.relative_humidity_2m ?? 50;
+    const vis  = h.visibility ?? 10000;
+    const code = h.weather_code ?? 0;
+
+    // Опасные явления — наивысший приоритет
+    if(code >= 95)               return { comfort:"Гроза ⚡",       color:"#f9ca24" };
+    if(snow > 1)                 return { comfort:"Снегопад",        color:"#a8d8ea" };
+    if(vis < 200)                return { comfort:"Густой туман",    color:"#b2bec3" };
+    if(r > 5)                    return { comfort:"Сильный дождь",   color:"#2980b9" };
+
+    // Экстремальные температуры (по ощущаемой)
+    if(feel < -15)               return { comfort:"Сильный мороз",   color:"#74b9ff" };
+    if(feel < -5)                return { comfort:"Морозно",          color:"#a8d8ea" };
+    if(feel > 37)                return { comfort:"Опасная жара",     color:"#d63031" };
+    if(feel > 32)                return { comfort:"Очень жарко",      color:"#ff6b6b" };
+
+    // Осадки умеренные
+    if(r > 0.5)                  return { comfort:"Дождливо",         color:"#4a90d9" };
+
+    // Ветер
+    if(gust > 15)                return { comfort:"Шквалисто",        color:"#fd9644" };
+    if(w > 10)                   return { comfort:"Ветрено",          color:"#ffd166" };
+
+    // Духота: жарко + высокая влажность
+    if(t > 26 && rh > 75)       return { comfort:"Душно",            color:"#e17055" };
+
+    // Комфортные диапазоны по температуре воздуха
+    if(t < 0)                    return { comfort:"Морозно",          color:"#a8d8ea" };
+    if(t < 8)                    return { comfort:"Холодно",          color:"#74b9ff" };
+    if(t < 14)                   return { comfort:"Прохладно",        color:"#55efc4" };
+    if(t <= 25)                  return { comfort:"Комфортно",        color:"#5fe08f" };
+    if(t <= 30)                  return { comfort:"Тепло",            color:"#fdcb6e" };
+    return                              { comfort:"Жарко",            color:"#ff6b6b" };
 }
 
 // --- основная загрузка ---
