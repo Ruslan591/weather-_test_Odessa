@@ -796,47 +796,55 @@ async function load(){
 
         const defaultPeriod = isToday ? currentPeriodId(nowHr) : "day";
 
-        const periodsHtml = PERIODS.map(p => {
+        const periodOrder = ["night","morn","day","eve"];
+        const nowPeriodId = currentPeriodId(nowHr);
+
+        // Для сегодня скрываем прошедшие периоды
+        const visiblePeriods = PERIODS.filter(p => {
+            if(!isToday) return true;
+            return periodOrder.indexOf(p.id) >= periodOrder.indexOf(nowPeriodId);
+        });
+
+        const periodsHtml = visiblePeriods.map(p => {
             const periodHrs = dayHours.filter(h => p.hours.includes(new Date(h.time).getHours()));
             const agg = aggregatePeriod(periodHrs);
             return renderPeriodCard(p.id, agg, dayKey, p.id === defaultPeriod);
         }).join("");
 
         const precipSummary = precip > 0.5
-            ? `<span style="font-size:11px;color:#74b9ff;margin-left:6px;">💧${precip.toFixed(1)} мм</span>`
+            ? `<span style="font-size:15px;color:#74b9ff;">💧${precip.toFixed(1)} мм</span>`
             : snow > 0.1
-            ? `<span style="font-size:11px;color:#a8d8ea;margin-left:6px;">❄ ${snow.toFixed(1)}</span>`
+            ? `<span style="font-size:15px;color:#a8d8ea;">❄ ${snow.toFixed(1)}</span>`
             : "";
 
         const isFirstDay = di === 0;
 
-        // Тело дефолтного периода — только для первого дня при загрузке
         const defaultPeriodHrs = dayHours.filter(h => PERIODS.find(p=>p.id===defaultPeriod).hours.includes(new Date(h.time).getHours()));
         const defaultAgg = aggregatePeriod(defaultPeriodHrs);
         const defaultBody = isFirstDay && defaultAgg ? renderPeriodBody(defaultPeriod, defaultAgg, dayKey) : "";
 
         html += `
-        <div style="color:#FFD700;font-size:14px;font-weight:700;padding:10px 4px 4px;letter-spacing:0.03em;text-align:center;">${dayLabel}</div>
+        <div style="color:#FFD700;font-size:16px;font-weight:700;padding:12px 4px 4px;letter-spacing:0.03em;text-align:center;">${dayLabel}</div>
         <div class="day-block" id="db_${dayKey}">
             <div class="day-summary" onclick="toggleDay('${dayKey}')">
                 <div class="indicator-line" style="background:${comfortColor};flex-shrink:0;"></div>
                 <div style="flex:1;min-width:0;">
-                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                         ${precipSummary}
                     </div>
-                    <div style="display:flex;align-items:center;gap:12px;margin-top:4px;">
-                        <span style="font-size:22px;">${wx.icon}</span>
-                        <span style="font-size:14px;color:#aaa;">${wx.text}</span>
-                        <span style="font-size:16px;font-weight:800;color:#ff8f00;">${tMax!=null?tMax.toFixed(0)+'°':'-'}</span>
-                        <span style="font-size:14px;color:#74b9ff;">${tMin!=null?tMin.toFixed(0)+'°':'-'}</span>
+                    <div style="display:flex;align-items:center;gap:14px;margin-top:6px;">
+                        <span style="font-size:32px;">${wx.icon}</span>
+                        <span style="font-size:17px;color:#aaa;">${wx.text}</span>
+                        <span style="font-size:22px;font-weight:800;color:#ff8f00;">${tMax!=null?tMax.toFixed(0)+'°':'-'}</span>
+                        <span style="font-size:19px;color:#74b9ff;">${tMin!=null?tMin.toFixed(0)+'°':'-'}</span>
                     </div>
                 </div>
                 <div style="text-align:right;flex-shrink:0;">
-                    <div style="font-size:13px;color:#aaa;">
+                    <div style="font-size:16px;color:#aaa;">
                         <i style="display:inline-block;transform:rotate(${avgDir+180}deg);font-style:normal;">↑</i>
                         ${Math.round(avgSpd)} м/с
                     </div>
-                    <div style="font-size:12px;color:#666;margin-top:3px;">${comfort}</div>
+                    <div style="font-size:14px;color:#666;margin-top:5px;">${comfort}</div>
                 </div>
             </div>
             <div class="day-body${isFirstDay?' open':''}" id="dayBody_${dayKey}">
@@ -850,7 +858,8 @@ async function load(){
                         </div>
                     </div>
                 </div>
-            </div>`;
+            </div>
+        </div>`;
     });
 
     document.getElementById("forecast").innerHTML = html;
