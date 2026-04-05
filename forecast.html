@@ -972,15 +972,15 @@ function renderHourCard(h){
     const cloudPct= h.cloud_cover ?? 0;
 
     function bar(pct, color, bg="#222"){
-        return `<div style="flex:1;height:4px;background:${bg};border-radius:3px;overflow:hidden;">
+        return `<div style="flex:1;height:5px;background:${bg};border-radius:3px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;"></div>
         </div>`;
     }
     function barRow(label, pct, color, valStr, bg="#222"){
-        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <span class="label" style="width:70px;flex-shrink:0;font-size:11px;">${label}</span>
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="width:74px;flex-shrink:0;font-size:13px;color:#aaa;">${label}</span>
             ${bar(pct, color, bg)}
-            <span style="font-size:11px;color:#777;width:36px;text-align:right;flex-shrink:0;">${valStr}</span>
+            <span style="font-size:13px;color:#777;width:44px;text-align:right;flex-shrink:0;">${valStr}</span>
         </div>`;
     }
 
@@ -990,31 +990,31 @@ function renderHourCard(h){
     <div class="hour-row" style="background:${rowBg};" id="hr_${uid}">
         <div class="hour-summary" onclick="toggleHourCard('${uid}')">
             <div class="indicator-line" style="background:${c};"></div>
-            <div style="width:16%;font-size:13px;color:#aaa;">${hr}:00</div>
-            <div style="width:18%;font-size:1.4em;text-align:center;">${wx.icon}</div>
-            <div style="width:32%;text-align:center;font-weight:800;font-size:14px;color:${t>0?'#ff8f00':'#00e5ff'}">${t.toFixed(1)}°</div>
+            <div style="width:16%;font-size:15px;color:#aaa;">${hr}:00</div>
+            <div style="width:18%;font-size:1.7em;text-align:center;">${wx.icon}</div>
+            <div style="width:32%;text-align:center;font-weight:800;font-size:17px;color:${t>0?'#ff8f00':'#00e5ff'}">${t.toFixed(1)}°</div>
             <div style="width:34%;text-align:center;">
-                <i style="display:inline-block;transform:rotate(${windDeg+180}deg);font-style:normal;font-size:13px;">↑</i>
-                <span style="font-size:12px;font-weight:600;margin-left:2px;">${Math.round(h.wind_speed_10m)}<span style="font-size:9px;color:#777;"> м/с</span></span>
+                <i style="display:inline-block;transform:rotate(${windDeg+180}deg);font-style:normal;font-size:15px;">↑</i>
+                <span style="font-size:14px;font-weight:600;margin-left:2px;">${Math.round(h.wind_speed_10m)}<span style="font-size:11px;color:#777;"> м/с</span></span>
             </div>
         </div>
         <div class="hour-details" id="hd_${uid}">
             <div class="hour-details-inner">
-                <div class="status-line" style="color:${c};font-size:12px;padding:6px 0;">${wx.text} · ${comfort}</div>
-                <div style="padding:6px 0;border-top:1px solid #222;display:flex;flex-direction:column;">
+                <div class="status-line" style="color:${c};font-size:14px;padding:8px 0;">${wx.text} · ${comfort}</div>
+                <div style="padding:8px 0;border-top:1px solid #222;display:flex;flex-direction:column;">
                     ${barRow("Осадки", precipPct, "#4a90d9", precip>0?precip.toFixed(1)+" мм":"0 мм", "#1e2a3a")}
                     ${barRow("Вер-ть", probPct, "#5b8fc9", probPct+"%")}
                     ${barRow("Облака", cloudPct, "#666", cloudPct+"%")}
                 </div>
-                <div style="padding:6px 0;border-top:1px solid #222;">
-                    <div class="grid-container" style="gap:6px;">
-                        <div><span class="label">Ощущается</span><div class="val">${h.apparent_temperature.toFixed(1)}°</div></div>
-                        <div><span class="label">Влажность</span><div class="val">${h.relative_humidity_2m}%</div></div>
-                        <div><span class="label">Ветер</span><div class="val">${windDir(windDeg)} ${Math.round(h.wind_speed_10m)} м/с</div></div>
-                        <div><span class="label">Порывы</span><div class="val">${Math.round(h.wind_gusts_10m)} м/с</div></div>
-                        <div><span class="label">Давление</span><div class="val">${h.pressure_msl.toFixed(1)} гПа</div></div>
-                        <div><span class="label">Видимость</span><div class="val">${(h.visibility/1000).toFixed(0)} км</div></div>
-                        ${h.snowfall > 0 ? `<div><span class="label">Снег</span><div class="val">${h.snowfall} мм</div></div>` : ""}
+                <div style="padding:8px 0;border-top:1px solid #222;">
+                    <div class="grid-container" style="gap:10px;">
+                        <div><span class="label" style="font-size:12px;">Ощущается</span><div class="val" style="font-size:15px;">${h.apparent_temperature.toFixed(1)}°</div></div>
+                        <div><span class="label" style="font-size:12px;">Влажность</span><div class="val" style="font-size:15px;">${h.relative_humidity_2m}%</div></div>
+                        <div><span class="label" style="font-size:12px;">Ветер</span><div class="val" style="font-size:15px;">${windDir(windDeg)} ${Math.round(h.wind_speed_10m)} м/с</div></div>
+                        <div><span class="label" style="font-size:12px;">Порывы</span><div class="val" style="font-size:15px;">${Math.round(h.wind_gusts_10m)} м/с</div></div>
+                        <div><span class="label" style="font-size:12px;">Давление</span><div class="val" style="font-size:15px;">${h.pressure_msl.toFixed(1)} гПа</div></div>
+                        <div><span class="label" style="font-size:12px;">Видимость</span><div class="val" style="font-size:15px;">${(h.visibility/1000).toFixed(0)} км</div></div>
+                        ${h.snowfall > 0 ? `<div><span class="label" style="font-size:12px;">Снег</span><div class="val" style="font-size:15px;">${h.snowfall} мм</div></div>` : ""}
                     </div>
                 </div>
             </div>
@@ -1034,14 +1034,14 @@ function renderPeriodCard(pId, agg, dayKey, isActive){
          id="pc_${dayKey}_${pId}"
          onclick="togglePeriod('${dayKey}','${pId}')"
          style="background:${bg};">
-        <div style="font-size:10px;color:#666;margin-bottom:3px;">${p.label}</div>
-        <div style="font-size:1.3em;">${agg.wx.icon}</div>
-        <div style="font-weight:800;font-size:13px;color:${(agg.tAvg??0)>0?'#ff8f00':'#00e5ff'};">${agg.tAvg!=null?agg.tAvg.toFixed(0)+'°':'-'}</div>
-        <div style="font-size:10px;color:#777;margin-top:2px;">
+        <div style="font-size:12px;color:#666;margin-bottom:4px;">${p.label}</div>
+        <div style="font-size:1.6em;">${agg.wx.icon}</div>
+        <div style="font-weight:800;font-size:17px;color:${(agg.tAvg??0)>0?'#ff8f00':'#00e5ff'};margin:3px 0;">${agg.tAvg!=null?agg.tAvg.toFixed(0)+'°':'-'}</div>
+        <div style="font-size:12px;color:#777;margin-top:3px;">
             <i style="display:inline-block;transform:rotate(${agg.avgDir+180}deg);font-style:normal;">↑</i>
             ${Math.round(agg.avgSpd)}
         </div>
-        ${precipStr ? `<div style="font-size:10px;color:#74b9ff;margin-top:2px;">${precipStr}</div>` : ""}
+        ${precipStr ? `<div style="font-size:12px;color:#74b9ff;margin-top:3px;">${precipStr}</div>` : ""}
     </div>`;
 }
 
@@ -1053,19 +1053,19 @@ function renderPeriodBody(pId, agg, dayKey){
         <div class="period-body-inner">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 0 8px;border-bottom:1px solid #222;">
                 <div style="text-align:center;">
-                    <div style="font-size:10px;color:#666;">Мин/Макс</div>
-                    <div style="font-weight:700;font-size:13px;">${agg.tMin!=null?agg.tMin.toFixed(0)+'°':'-'} / ${agg.tMax!=null?agg.tMax.toFixed(0)+'°':'-'}</div>
+                    <div style="font-size:12px;color:#666;">Мин/Макс</div>
+                    <div style="font-weight:800;font-size:17px;">${agg.tMin!=null?agg.tMin.toFixed(0)+'°':'-'} / ${agg.tMax!=null?agg.tMax.toFixed(0)+'°':'-'}</div>
                 </div>
                 <div style="text-align:center;">
-                    <div style="font-size:10px;color:#666;">Осадки</div>
-                    <div style="font-weight:700;font-size:13px;">${agg.precip>0.1?agg.precip.toFixed(1)+' мм':(agg.snow>0.1?'❄ '+agg.snow.toFixed(1):'нет')}</div>
+                    <div style="font-size:12px;color:#666;">Осадки</div>
+                    <div style="font-weight:800;font-size:17px;">${agg.precip>0.1?agg.precip.toFixed(1)+' мм':(agg.snow>0.1?'❄ '+agg.snow.toFixed(1):'нет')}</div>
                 </div>
                 <div style="text-align:center;">
-                    <div style="font-size:10px;color:#666;">Влажность</div>
-                    <div style="font-weight:700;font-size:13px;">${agg.rh}%</div>
+                    <div style="font-size:12px;color:#666;">Влажность</div>
+                    <div style="font-weight:800;font-size:17px;">${agg.rh}%</div>
                 </div>
             </div>
-            <div style="padding:8px 0 4px;font-size:10px;color:#555;font-weight:600;letter-spacing:0.04em;">ПО ЧАСАМ</div>
+            <div style="padding:10px 0 6px;font-size:12px;color:#555;font-weight:600;letter-spacing:0.04em;">ПО ЧАСАМ</div>
             ${hoursHtml}
         </div>
     </div>`;
