@@ -802,13 +802,20 @@ async function load(){
             ? `Сегодня, ${dayDate.getDate()} ${MON_NAMES[dayDate.getMonth()]}`
             : `${DAY_NAMES[dayDate.getDay()]}, ${dayDate.getDate()} ${MON_NAMES[dayDate.getMonth()]}`;
 
-        const dayAgg = aggregateDay(dayHours);
+        // Для сегодня считаем агрегат только по будущим часам
+        const nowPeriodId = currentPeriodId(nowHr);
+        const periodOrder = ["night","morn","day","eve"];
+        const futureHours = isToday
+            ? dayHours.filter(h => {
+                const hr = new Date(h.time).getHours();
+                const pId = currentPeriodId(hr);
+                return periodOrder.indexOf(pId) >= periodOrder.indexOf(nowPeriodId);
+            })
+            : dayHours;
+        const dayAgg = aggregateDay(futureHours.length ? futureHours : dayHours);
         const { tMin, tMax, avgDir, avgSpd, precip, snow, wx, comfort, comfortColor } = dayAgg;
 
         const defaultPeriod = isToday ? currentPeriodId(nowHr) : "day";
-
-        const periodOrder = ["night","morn","day","eve"];
-        const nowPeriodId = currentPeriodId(nowHr);
 
         // Для сегодня скрываем прошедшие периоды
         const visiblePeriods = PERIODS.filter(p => {
