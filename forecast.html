@@ -816,35 +816,37 @@ async function load(){
         const defaultBody = isFirstDay && defaultAgg ? renderPeriodBody(defaultPeriod, defaultAgg, dayKey) : "";
 
         html += `
-        <div style="color:#FFD700;font-size:12px;font-weight:700;padding:10px 4px 4px;letter-spacing:0.03em;">${dayLabel}</div>
+        <div style="color:#FFD700;font-size:14px;font-weight:700;padding:10px 4px 4px;letter-spacing:0.03em;text-align:center;">${dayLabel}</div>
         <div class="day-block" id="db_${dayKey}">
             <div class="day-summary" onclick="toggleDay('${dayKey}')">
                 <div class="indicator-line" style="background:${comfortColor};flex-shrink:0;"></div>
                 <div style="flex:1;min-width:0;">
-                    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                         ${precipSummary}
                     </div>
-                    <div style="display:flex;align-items:center;gap:10px;margin-top:3px;">
-                        <span style="font-size:18px;">${wx.icon}</span>
-                        <span style="font-size:13px;color:#aaa;">${wx.text}</span>
-                        <span style="font-size:13px;font-weight:700;color:#ff8f00;">${tMax!=null?tMax.toFixed(0)+'°':'-'}</span>
-                        <span style="font-size:12px;color:#74b9ff;">${tMin!=null?tMin.toFixed(0)+'°':'-'}</span>
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:4px;">
+                        <span style="font-size:22px;">${wx.icon}</span>
+                        <span style="font-size:14px;color:#aaa;">${wx.text}</span>
+                        <span style="font-size:16px;font-weight:800;color:#ff8f00;">${tMax!=null?tMax.toFixed(0)+'°':'-'}</span>
+                        <span style="font-size:14px;color:#74b9ff;">${tMin!=null?tMin.toFixed(0)+'°':'-'}</span>
                     </div>
                 </div>
                 <div style="text-align:right;flex-shrink:0;">
-                    <div style="font-size:12px;color:#aaa;">
+                    <div style="font-size:13px;color:#aaa;">
                         <i style="display:inline-block;transform:rotate(${avgDir+180}deg);font-style:normal;">↑</i>
                         ${Math.round(avgSpd)} м/с
                     </div>
-                    <div style="font-size:11px;color:#555;margin-top:2px;">${comfort}</div>
+                    <div style="font-size:12px;color:#666;margin-top:3px;">${comfort}</div>
                 </div>
             </div>
-            <div class="day-body" id="dayBody_${dayKey}" style="${isFirstDay?'':'display:none;'}">
-                <div class="periods-grid" id="pg_${dayKey}">
-                    ${periodsHtml}
-                </div>
-                <div id="periodBodies_${dayKey}">
-                    ${defaultBody}
+            <div class="day-body${isFirstDay?' open':''}" id="dayBody_${dayKey}">
+                <div class="day-body-inner">
+                    <div class="periods-grid" id="pg_${dayKey}">
+                        ${periodsHtml}
+                    </div>
+                    <div id="periodBodies_${dayKey}">
+                        ${defaultBody}
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -1069,13 +1071,15 @@ function renderPeriodBody(pId, agg, dayKey){
 // УПРАВЛЕНИЕ ШТОРКАМИ
 // ===========================================
 function toggleDay(dayKey){
-    const body   = document.getElementById("dayBody_" + dayKey);
+    const body = document.getElementById("dayBody_" + dayKey);
     if(!body) return;
-    const isOpen = body.style.display !== "none";
-    document.querySelectorAll(".day-body").forEach(el => el.style.display = "none");
+    const isOpen = body.classList.contains("open");
+
+    // Закрыть все
+    document.querySelectorAll(".day-body").forEach(el => el.classList.remove("open"));
+
     if(!isOpen){
-        body.style.display = "block";
-        // Открыть дефолтный период если тело пустое
+        body.classList.add("open");
         const pbCont = document.getElementById("periodBodies_" + dayKey);
         if(pbCont && !pbCont.innerHTML.trim()){
             const firstActive = document.querySelector(`#pg_${dayKey} .period-card.period-active`);
@@ -1088,13 +1092,15 @@ function toggleDay(dayKey){
 }
 
 function togglePeriod(dayKey, pId){
-    const pbCont   = document.getElementById("periodBodies_" + dayKey);
+    const pbCont  = document.getElementById("periodBodies_" + dayKey);
     if(!pbCont) return;
     const existing = document.getElementById("pb_" + dayKey + "_" + pId);
     if(existing){
-        // Закрыть если уже открыт
-        pbCont.innerHTML = "";
-        document.querySelectorAll(`#pg_${dayKey} .period-card`).forEach(el => el.classList.remove("period-active"));
+        existing.classList.remove("open");
+        setTimeout(() => {
+            pbCont.innerHTML = "";
+            document.querySelectorAll(`#pg_${dayKey} .period-card`).forEach(el => el.classList.remove("period-active"));
+        }, 350);
         return;
     }
     openPeriod(dayKey, pId);
@@ -1122,7 +1128,10 @@ function openPeriod(dayKey, pId){
     if(btn) btn.classList.add("period-active");
 
     pbCont.innerHTML = renderPeriodBody(pId, agg, dayKey);
-    pbCont.scrollIntoView({ behavior:"smooth", block:"nearest" });
+
+    // Плавное появление
+    const pb = document.getElementById("pb_" + dayKey + "_" + pId);
+    if(pb) requestAnimationFrame(() => pb.classList.add("open"));
 }
 
 load();
