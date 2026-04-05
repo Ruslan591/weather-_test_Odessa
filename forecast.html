@@ -821,7 +821,7 @@ async function load(){
 
         const defaultPeriodHrs = dayHours.filter(h => PERIODS.find(p=>p.id===defaultPeriod).hours.includes(new Date(h.time).getHours()));
         const defaultAgg = aggregatePeriod(defaultPeriodHrs);
-        const defaultBody = isFirstDay && defaultAgg ? renderPeriodBody(defaultPeriod, defaultAgg, dayKey) : "";
+        const defaultBody = "";
 
         html += `
         <div style="color:#FFD700;font-size:18px;font-weight:700;padding:12px 4px 4px;letter-spacing:0.03em;text-align:center;">${dayLabel}</div>
@@ -847,7 +847,7 @@ async function load(){
                     <div style="font-size:14px;color:#666;margin-top:5px;">${comfort}</div>
                 </div>
             </div>
-            <div class="day-body${isFirstDay?' open':''}" id="dayBody_${dayKey}">
+            <div class="day-body" id="dayBody_${dayKey}">
                 <div class="day-body-inner">
                     <div class="day-body-inner-pad">
                         <div class="periods-grid" id="pg_${dayKey}">
