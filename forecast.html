@@ -816,12 +816,12 @@ async function load(){
         const defaultBody = isFirstDay && defaultAgg ? renderPeriodBody(defaultPeriod, defaultAgg, dayKey) : "";
 
         html += `
+        <div style="color:#FFD700;font-size:12px;font-weight:700;padding:10px 4px 4px;letter-spacing:0.03em;">${dayLabel}</div>
         <div class="day-block" id="db_${dayKey}">
             <div class="day-summary" onclick="toggleDay('${dayKey}')">
                 <div class="indicator-line" style="background:${comfortColor};flex-shrink:0;"></div>
                 <div style="flex:1;min-width:0;">
                     <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
-                        <span style="font-weight:700;font-size:14px;">${dayLabel}</span>
                         ${precipSummary}
                     </div>
                     <div style="display:flex;align-items:center;gap:10px;margin-top:3px;">
