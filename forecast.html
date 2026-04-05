@@ -843,14 +843,14 @@ async function load(){
 
         html += `
         <div class="day-block" id="db_${dayKey}" style="margin-bottom:10px;">
+            <!-- Заголовок дня — над карточкой, по центру, внутри day-block -->
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:10px;padding:12px 12px 8px;border-bottom:1px solid #222;">
+                <span style="font-size:34px;font-weight:800;color:#fff;line-height:1;">${dayDate.getDate()}</span>
+                <span style="font-size:18px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;">${MON_NAMES[dayDate.getMonth()]}</span>
+                <span style="font-size:16px;color:${isToday ? '#FFD700' : '#555'};font-weight:${isToday ? '700' : '400'};">${isToday ? '· сегодня' : '· ' + DAY_NAMES[dayDate.getDay()]}</span>
+            </div>
             <div class="day-summary" onclick="toggleDay('${dayKey}')">
                 <div class="indicator-line" style="background:${comfortColor};flex-shrink:0;"></div>
-                <!-- Дата — левый блок, интегрирован в карточку -->
-                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:48px;margin-right:10px;flex-shrink:0;">
-                    <div style="font-size:28px;font-weight:800;color:#fff;line-height:1;">${dayDate.getDate()}</div>
-                    <div style="font-size:13px;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-top:1px;">${MON_NAMES[dayDate.getMonth()]}</div>
-                    <div style="font-size:12px;color:${isToday ? '#FFD700' : '#555'};font-weight:${isToday ? '700' : '400'};margin-top:2px;">${isToday ? 'сегодня' : DAY_NAMES[dayDate.getDay()]}</div>
-                </div>
                 <div style="flex:1;min-width:0;">
                     <div style="display:flex;font-size:20px;align-items:center;gap:8px;flex-wrap:wrap;">
                         ${precipSummary}
