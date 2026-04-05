@@ -843,46 +843,38 @@ async function load(){
 
         html += `
         <div class="day-block" id="db_${dayKey}" style="margin-bottom:10px;">
-            <!-- Заголовок дня — над карточкой, по центру, внутри day-block -->
-            <div style="display:flex;align-items:baseline;justify-content:center;gap:10px;padding:12px 12px 8px;border-bottom:1px solid #222;">
-                <span style="font-size:34px;font-weight:800;color:#fff;line-height:1;">${dayDate.getDate()}</span>
-                <span style="font-size:18px;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;">${MON_NAMES[dayDate.getMonth()]}</span>
-                <span style="font-size:16px;color:${isToday ? '#FFD700' : '#555'};font-weight:${isToday ? '700' : '400'};">${isToday ? '· сегодня' : '· ' + DAY_NAMES[dayDate.getDay()]}</span>
+            <!-- Заголовок дня с градиентным фоном -->
+            <div style="
+                display:flex;align-items:baseline;justify-content:center;gap:12px;
+                padding:14px 12px 12px;
+                background:linear-gradient(180deg, ${comfortColor}22 0%, ${comfortColor}08 60%, transparent 100%);
+                border-bottom:1px solid ${comfortColor}33;
+            ">
+                <span style="font-size:42px;font-weight:800;color:#fff;line-height:1;">${dayDate.getDate()}</span>
+                <span style="font-size:22px;color:#bbb;text-transform:uppercase;letter-spacing:0.1em;align-self:center;">${MON_NAMES[dayDate.getMonth()]}</span>
+                <span style="font-size:18px;color:${isToday ? '#FFD700' : '#666'};font-weight:${isToday ? '700' : '400'};align-self:center;">${isToday ? '· сегодня' : '· ' + DAY_NAMES[dayDate.getDay()]}</span>
             </div>
             <div class="day-summary" onclick="toggleDay('${dayKey}')">
                 <div class="indicator-line" style="background:${comfortColor};flex-shrink:0;"></div>
                 <div style="flex:1;min-width:0;">
-                    <div style="display:flex;font-size:20px;align-items:center;gap:8px;flex-wrap:wrap;">
-                        ${precipSummary}
-                    </div>
-                    <div style="display:flex;align-items:center;gap:14px;margin-top:6px;">
-                        <span style="font-size:35px;">${wx.icon}</span>
-                        <span style="font-size:18px;color:#aaa;">${wx.text}</span>
-                        <span style="font-size:20px;color:#74b9ff;">${tMin!=null?tMin.toFixed(0)+'°':'-'}</span>
-                        <span style="font-size:23px;font-weight:800;color:#ff8f00;">${tMax!=null?tMax.toFixed(0)+'°':'-'}</span>
+                    ${precipSummary ? `<div style="font-size:22px;margin-bottom:6px;">${precipSummary}</div>` : ""}
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <span style="font-size:44px;line-height:1;">${wx.icon}</span>
+                        <span style="font-size:22px;color:#aaa;">${wx.text}</span>
                     </div>
                 </div>
-                <div style="text-align:right;flex-shrink:0;">
-                    <div style="font-size:18px;color:#aaa;">
+                <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:6px;flex-shrink:0;">
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+                        <span style="font-size:30px;font-weight:800;color:#ff8f00;line-height:1;">${tMax!=null?tMax.toFixed(0)+'°':'-'}</span>
+                        <span style="font-size:22px;color:#74b9ff;line-height:1;">${tMin!=null?tMin.toFixed(0)+'°':'-'}</span>
+                    </div>
+                    <div style="font-size:18px;color:#aaa;text-align:right;">
                         <i style="display:inline-block;transform:rotate(${avgDir+180}deg);font-style:normal;">↑</i>
                         ${Math.round(avgSpd)} м/с
                     </div>
-                    <div style="font-size:14px;color:${comfortColor};margin-top:5px;">${comfort}</div>
+                    <div style="font-size:16px;color:${comfortColor};font-weight:600;">${comfort}</div>
                 </div>
-            </div>
-            <div class="day-body" id="dayBody_${dayKey}">
-                <div class="day-body-inner">
-                    <div class="day-body-inner-pad">
-                        <div class="periods-grid" id="pg_${dayKey}">
-                            ${periodsHtml}
-                        </div>
-                        <div id="periodBodies_${dayKey}">
-                            ${defaultBody}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>`;
+            </div>`;
     });
 
     document.getElementById("forecast").innerHTML = html;
