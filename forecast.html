@@ -874,7 +874,16 @@ async function load(){
                     </div>
                     <div style="font-size:16px;color:${comfortColor};font-weight:600;">${comfort}</div>
                 </div>
-            </div>`;
+            </div>
+            <div class="day-body" id="dayBody_${dayKey}">
+                <div class="day-body-inner">
+                    <div class="day-body-inner-pad">
+                        <div class="periods-grid" id="pg_${dayKey}">${periodsHtml}</div>
+                        <div id="periodBodies_${dayKey}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
     });
 
     document.getElementById("forecast").innerHTML = html;
