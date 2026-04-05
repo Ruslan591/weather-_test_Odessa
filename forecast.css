@@ -315,27 +315,25 @@ svg{margin-bottom:15px;}
     padding: 14px 14px 14px 8px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: background 0.15s;
+    transition: background 0.2s;
 }
 .day-summary:active { background: rgba(255,255,255,0.03); }
 
+/* grid-trick — как в synop details */
 .day-body {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.45s cubic-bezier(0.4,0,0.2,1);
-    border-top: 0px solid #2a2a2a;
+    transition: grid-template-rows 0.55s cubic-bezier(0.4,0,0.2,1);
 }
 .day-body.open {
     grid-template-rows: 1fr;
-    border-top: 1px solid #2a2a2a;
 }
 .day-body-inner {
     overflow: hidden;
-    padding: 0;
-    transition: padding 0.45s cubic-bezier(0.4,0,0.2,1);
 }
-.day-body.open .day-body-inner {
+.day-body-inner-pad {
     padding: 10px 10px 12px;
+    border-top: 1px solid #2a2a2a;
 }
 
 .periods-grid {
@@ -351,7 +349,7 @@ svg{margin-bottom:15px;}
     padding: 10px 4px;
     text-align: center;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.2s, background 0.2s;
     -webkit-tap-highlight-color: transparent;
 }
 .period-card:active { opacity: 0.7; }
@@ -360,15 +358,55 @@ svg{margin-bottom:15px;}
     background: rgba(79,195,247,0.07) !important;
 }
 
+/* period-body — тот же grid-trick */
 .period-body {
-    overflow: hidden;
-    max-height: 0;
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.5s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.4s ease;
     opacity: 0;
-    transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
 }
 .period-body.open {
-    max-height: 4000px;
+    grid-template-rows: 1fr;
     opacity: 1;
+}
+.period-body-inner {
+    overflow: hidden;
+}
+
+/* Часовые карточки — grid-trick */
+.hour-row {
+    background: #1e1e1e;
+    border-radius: 16px;
+    margin-bottom: 10px;
+    border: 1.5px solid #2a2a2a;
+    overflow: hidden;
+}
+.hour-summary {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px 10px 8px;
+    cursor: pointer;
+    gap: 6px;
+}
+.hour-details {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.45s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.35s ease;
+    opacity: 0;
+}
+.hour-details.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+.hour-details-inner {
+    overflow: hidden;
+    padding: 0 12px;
+}
+.hour-details.open .hour-details-inner {
+    padding: 10px 12px 15px;
+    border-top: 1px solid #2a2a2a;
 }
 
 @keyframes fadeIn {

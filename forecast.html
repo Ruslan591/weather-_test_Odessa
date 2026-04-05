@@ -841,15 +841,16 @@ async function load(){
             </div>
             <div class="day-body${isFirstDay?' open':''}" id="dayBody_${dayKey}">
                 <div class="day-body-inner">
-                    <div class="periods-grid" id="pg_${dayKey}">
-                        ${periodsHtml}
-                    </div>
-                    <div id="periodBodies_${dayKey}">
-                        ${defaultBody}
+                    <div class="day-body-inner-pad">
+                        <div class="periods-grid" id="pg_${dayKey}">
+                            ${periodsHtml}
+                        </div>
+                        <div id="periodBodies_${dayKey}">
+                            ${defaultBody}
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>`;
+            </div>`;
     });
 
     document.getElementById("forecast").innerHTML = html;
@@ -969,9 +970,6 @@ function renderHourCard(h){
     const precipPct = Math.min(100, precip / 10 * 100);
     const probPct = h.precip_prob ?? 0;
     const cloudPct= h.cloud_cover ?? 0;
-    const cL = h.cloud_cover_low  ?? 0;
-    const cM = h.cloud_cover_mid  ?? 0;
-    const cH = h.cloud_cover_high ?? 0;
 
     function bar(pct, color, bg="#222"){
         return `<div style="flex:1;height:4px;background:${bg};border-radius:3px;overflow:hidden;">
@@ -986,9 +984,11 @@ function renderHourCard(h){
         </div>`;
     }
 
+    const uid = h.time.replace(/[^0-9]/g, "");
+
     return `
-    <div class="row" style="background:${rowBg};margin-bottom:6px;">
-        <div class="summary" onclick="toggle(this)">
+    <div class="hour-row" style="background:${rowBg};" id="hr_${uid}">
+        <div class="hour-summary" onclick="toggleHourCard('${uid}')">
             <div class="indicator-line" style="background:${c};"></div>
             <div style="width:16%;font-size:13px;color:#aaa;">${hr}:00</div>
             <div style="width:18%;font-size:1.4em;text-align:center;">${wx.icon}</div>
@@ -998,25 +998,27 @@ function renderHourCard(h){
                 <span style="font-size:12px;font-weight:600;margin-left:2px;">${Math.round(h.wind_speed_10m)}<span style="font-size:9px;color:#777;"> м/с</span></span>
             </div>
         </div>
-        <div class="details-body"><div>
-            <div class="status-line" style="color:${c};font-size:12px;padding:6px 0;">${wx.text} · ${comfort}</div>
-            <div style="padding:6px 0;border-top:1px solid #222;display:flex;flex-direction:column;">
-                ${barRow("Осадки", precipPct, "#4a90d9", precip>0?precip.toFixed(1)+" мм":"0 мм", "#1e2a3a")}
-                ${barRow("Вер-ть", probPct, "#5b8fc9", probPct+"%")}
-                ${barRow("Облака", cloudPct, "#666", cloudPct+"%")}
-            </div>
-            <div style="padding:6px 0;border-top:1px solid #222;">
-                <div class="grid-container" style="gap:6px;">
-                    <div><span class="label">Ощущается</span><div class="val">${h.apparent_temperature.toFixed(1)}°</div></div>
-                    <div><span class="label">Влажность</span><div class="val">${h.relative_humidity_2m}%</div></div>
-                    <div><span class="label">Ветер</span><div class="val">${windDir(windDeg)} ${Math.round(h.wind_speed_10m)} м/с</div></div>
-                    <div><span class="label">Порывы</span><div class="val">${Math.round(h.wind_gusts_10m)} м/с</div></div>
-                    <div><span class="label">Давление</span><div class="val">${h.pressure_msl.toFixed(1)} гПа</div></div>
-                    <div><span class="label">Видимость</span><div class="val">${(h.visibility/1000).toFixed(0)} км</div></div>
-                    ${h.snowfall > 0 ? `<div><span class="label">Снег</span><div class="val">${h.snowfall} мм</div></div>` : ""}
+        <div class="hour-details" id="hd_${uid}">
+            <div class="hour-details-inner">
+                <div class="status-line" style="color:${c};font-size:12px;padding:6px 0;">${wx.text} · ${comfort}</div>
+                <div style="padding:6px 0;border-top:1px solid #222;display:flex;flex-direction:column;">
+                    ${barRow("Осадки", precipPct, "#4a90d9", precip>0?precip.toFixed(1)+" мм":"0 мм", "#1e2a3a")}
+                    ${barRow("Вер-ть", probPct, "#5b8fc9", probPct+"%")}
+                    ${barRow("Облака", cloudPct, "#666", cloudPct+"%")}
+                </div>
+                <div style="padding:6px 0;border-top:1px solid #222;">
+                    <div class="grid-container" style="gap:6px;">
+                        <div><span class="label">Ощущается</span><div class="val">${h.apparent_temperature.toFixed(1)}°</div></div>
+                        <div><span class="label">Влажность</span><div class="val">${h.relative_humidity_2m}%</div></div>
+                        <div><span class="label">Ветер</span><div class="val">${windDir(windDeg)} ${Math.round(h.wind_speed_10m)} м/с</div></div>
+                        <div><span class="label">Порывы</span><div class="val">${Math.round(h.wind_gusts_10m)} м/с</div></div>
+                        <div><span class="label">Давление</span><div class="val">${h.pressure_msl.toFixed(1)} гПа</div></div>
+                        <div><span class="label">Видимость</span><div class="val">${(h.visibility/1000).toFixed(0)} км</div></div>
+                        ${h.snowfall > 0 ? `<div><span class="label">Снег</span><div class="val">${h.snowfall} мм</div></div>` : ""}
+                    </div>
                 </div>
             </div>
-        </div></div>
+        </div>
     </div>`;
 }
 
@@ -1048,34 +1050,58 @@ function renderPeriodBody(pId, agg, dayKey){
     const hoursHtml = agg.hrs.map(h => renderHourCard(h)).join("");
     return `
     <div class="period-body" id="pb_${dayKey}_${pId}">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 0 8px;border-bottom:1px solid #222;">
-            <div style="text-align:center;">
-                <div style="font-size:10px;color:#666;">Мин/Макс</div>
-                <div style="font-weight:700;font-size:13px;">${agg.tMin!=null?agg.tMin.toFixed(0)+'°':'-'} / ${agg.tMax!=null?agg.tMax.toFixed(0)+'°':'-'}</div>
+        <div class="period-body-inner">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 0 8px;border-bottom:1px solid #222;">
+                <div style="text-align:center;">
+                    <div style="font-size:10px;color:#666;">Мин/Макс</div>
+                    <div style="font-weight:700;font-size:13px;">${agg.tMin!=null?agg.tMin.toFixed(0)+'°':'-'} / ${agg.tMax!=null?agg.tMax.toFixed(0)+'°':'-'}</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:10px;color:#666;">Осадки</div>
+                    <div style="font-weight:700;font-size:13px;">${agg.precip>0.1?agg.precip.toFixed(1)+' мм':(agg.snow>0.1?'❄ '+agg.snow.toFixed(1):'нет')}</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:10px;color:#666;">Влажность</div>
+                    <div style="font-weight:700;font-size:13px;">${agg.rh}%</div>
+                </div>
             </div>
-            <div style="text-align:center;">
-                <div style="font-size:10px;color:#666;">Осадки</div>
-                <div style="font-weight:700;font-size:13px;">${agg.precip>0.1?agg.precip.toFixed(1)+' мм':(agg.snow>0.1?'❄ '+agg.snow.toFixed(1):'нет')}</div>
-            </div>
-            <div style="text-align:center;">
-                <div style="font-size:10px;color:#666;">Влажность</div>
-                <div style="font-weight:700;font-size:13px;">${agg.rh}%</div>
-            </div>
+            <div style="padding:8px 0 4px;font-size:10px;color:#555;font-weight:600;letter-spacing:0.04em;">ПО ЧАСАМ</div>
+            ${hoursHtml}
         </div>
-        <div style="padding:8px 0 4px;font-size:10px;color:#555;font-weight:600;letter-spacing:0.04em;">ПО ЧАСАМ</div>
-        ${hoursHtml}
     </div>`;
 }
 
 // ===========================================
 // УПРАВЛЕНИЕ ШТОРКАМИ
 // ===========================================
+// Глобальный трекер открытой часовой карточки
+let _openHourUid = null;
+
+function toggleHourCard(uid){
+    const det = document.getElementById("hd_" + uid);
+    if(!det) return;
+    const isOpen = det.classList.contains("open");
+
+    // Закрыть предыдущую
+    if(_openHourUid && _openHourUid !== uid){
+        const prev = document.getElementById("hd_" + _openHourUid);
+        if(prev) prev.classList.remove("open");
+    }
+
+    if(isOpen){
+        det.classList.remove("open");
+        _openHourUid = null;
+    } else {
+        det.classList.add("open");
+        _openHourUid = uid;
+    }
+}
+
 function toggleDay(dayKey){
     const body = document.getElementById("dayBody_" + dayKey);
     if(!body) return;
     const isOpen = body.classList.contains("open");
 
-    // Закрыть все
     document.querySelectorAll(".day-body").forEach(el => el.classList.remove("open"));
 
     if(!isOpen){
@@ -1100,7 +1126,7 @@ function togglePeriod(dayKey, pId){
         setTimeout(() => {
             pbCont.innerHTML = "";
             document.querySelectorAll(`#pg_${dayKey} .period-card`).forEach(el => el.classList.remove("period-active"));
-        }, 350);
+        }, 500);
         return;
     }
     openPeriod(dayKey, pId);
@@ -1123,15 +1149,29 @@ function openPeriod(dayKey, pId){
     const pbCont = document.getElementById("periodBodies_" + dayKey);
     if(!pbCont) return;
 
+    // Закрыть текущий период плавно, потом открыть новый
+    const prevBody = pbCont.querySelector(".period-body");
+    if(prevBody){
+        prevBody.classList.remove("open");
+        setTimeout(() => {
+            pbCont.innerHTML = "";
+            _renderAndOpenPeriod(dayKey, pId, agg, pbCont);
+        }, 480);
+    } else {
+        _renderAndOpenPeriod(dayKey, pId, agg, pbCont);
+    }
+}
+
+function _renderAndOpenPeriod(dayKey, pId, agg, pbCont){
     document.querySelectorAll(`#pg_${dayKey} .period-card`).forEach(el => el.classList.remove("period-active"));
     const btn = document.getElementById("pc_" + dayKey + "_" + pId);
     if(btn) btn.classList.add("period-active");
 
     pbCont.innerHTML = renderPeriodBody(pId, agg, dayKey);
+    _openHourUid = null;
 
-    // Плавное появление
     const pb = document.getElementById("pb_" + dayKey + "_" + pId);
-    if(pb) requestAnimationFrame(() => pb.classList.add("open"));
+    if(pb) requestAnimationFrame(() => requestAnimationFrame(() => pb.classList.add("open")));
 }
 
 load();
