@@ -318,10 +318,11 @@ svg{margin-bottom:15px;}
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 14px 14px 14px 8px;
+    padding: 16px 14px 16px 8px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: background 0.2s;
+    border-bottom: 1px solid #2a2a2a;
 }
 .day-summary:active { background: rgba(255,255,255,0.03); }
 
