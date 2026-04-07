@@ -105,7 +105,7 @@ function modelLabel(model){
     }
 }
 
-let weatherModel = localStorage.getItem("weatherModel") || "ecmwf_ifs04";
+let weatherModel = localStorage.getItem("weatherModel") || "ecmwf_ifs";
 document.getElementById("modelName").innerText = modelLabel(weatherModel);
 
 function toggleModelMenu() {
@@ -918,9 +918,27 @@ function comfortLevel(h){
 // --- основная загрузка ---
 async function load(){
     const API = `https://api.open-meteo.com/v1/forecast?latitude=46.43&longitude=30.74&hourly=temperature_2m,apparent_temperature,pressure_msl,relative_humidity_2m,weather_code,visibility,wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation,precipitation_probability,showers,snowfall,snow_depth,shortwave_radiation,direct_radiation,diffuse_radiation,dew_point_2m,runoff,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high&models=${weatherModel}&timezone=auto&forecast_days=${forecastDays}&wind_speed_unit=ms`;
-    const r    = await fetch(API);
-    const data = await r.json();
-    const h    = data.hourly;
+    let data;
+    try {
+        const r = await fetch(API);
+        if(!r.ok) throw new Error(`HTTP ${r.status}`);
+        data = await r.json();
+    } catch(e) {
+        document.getElementById("forecast").innerHTML =
+            `<div style="padding:20px;text-align:center;color:#ff8f43;">
+                ⚠️ Ошибка загрузки прогноза: ${e.message}<br>
+                <span style="font-size:12px;color:#666;margin-top:6px;display:block;">
+                    Модель: ${weatherModel} · Попробуйте обновить страницу
+                </span>
+             </div>`;
+        return;
+    }
+    const h = data.hourly;
+    if(!h){ 
+        document.getElementById("forecast").innerHTML =
+            `<div style="padding:20px;text-align:center;color:#ff8f43;">⚠️ Нет данных от API</div>`;
+        return;
+    }
 
     const hours = h.time.map((t, i) => ({
         time:                  t,
