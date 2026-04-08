@@ -162,6 +162,17 @@ async function fetchStation(id){
 /* =========================================================
    РЕНДЕР
 ========================================================= */
+function timeAgeColor(obsTimeLocal){
+    if(!obsTimeLocal) return "#666";
+    const d = new Date(obsTimeLocal.replace(" ", "T"));
+    if(isNaN(d)) return "#666";
+    const ageMin = (Date.now() - d.getTime()) / 60000;
+    if(ageMin < 20)  return "#5fe08f";  // свежие — зелёный
+    if(ageMin < 60)  return "#ffd166";  // до часа — жёлтый
+    if(ageMin < 180) return "#ff9f43";  // до 3 часов — оранжевый
+    return "#ff6b6b";                   // старше 3 часов — красный
+}
+
 function renderPWSStation(p){
     _lastData = p;
     const box = document.getElementById("pwsContent");
@@ -214,7 +225,7 @@ function renderPWSStation(p){
         <div class="pws-station-header">
             <div>
                 <div class="cardTitle" style="margin-bottom:2px;">${escapeHtml(cfg?.name||_currentId)}</div>
-                <div class="small" style="color:#666;">${escapeHtml(p.stationID||_currentId)} · ${escapeHtml(timeStr)}</div>
+                <div class="small" style="color:${timeAgeColor(p.obsTimeLocal)};">${escapeHtml(cfg?.name||_currentId)} · ${escapeHtml(timeStr)}</div>
             </div>
             <div style="font-size:28px;font-weight:800;color:${tempColorExact(p.temp)};">${fmt1(p.temp,"°C")}</div>
         </div>
