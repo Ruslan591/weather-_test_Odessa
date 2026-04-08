@@ -116,30 +116,31 @@ if(period === "7day"){
     }
 
     if(period === "custom"){
-        const s = document.getElementById("histDateStart")?.value?.replace(/-/g,"");
-        const e = document.getElementById("histDateEnd")?.value?.replace(/-/g,"");
-        if(!s || !e) throw new Error("Выберите даты");
-        const url = `https://api.weather.com/v2/pws/history/daily`
+    const s = document.getElementById("histDateStart")?.value;
+    const e = document.getElementById("histDateEnd")?.value;
+    if(!s || !e) throw new Error("Выберите даты");
+
+    // Собираем все дни в диапазоне
+    const start = new Date(s);
+    const end   = new Date(e);
+    const allObs = [];
+
+    for(let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)){
+        const ymd = d.toISOString().slice(0,10).replace(/-/g,"");
+        const url = `https://api.weather.com/v2/pws/history/all`
             + `?stationId=${encodeURIComponent(stationId)}&format=json&units=m&numericPrecision=decimal`
-            + `&startDate=${s}&endDate=${e}&apiKey=${key}`;
-        const r = await fetch(url, {cache:"no-store"});
-        if(!r.ok) throw new Error("HTTP " + r.status);
-        const d = await r.json();
-        if(!d?.observations?.length) throw new Error("Нет данных");
-        return d.observations.map(o => ({
-            obsTimeLocal: o.obsTimeLocal || (o.obsTimeUtc||""),
-            temp:         o.metric?.tempAvg    ?? null,
-            tempHigh:     o.metric?.tempHigh   ?? null,
-            tempLow:      o.metric?.tempLow    ?? null,
-            pressure:     o.metric?.pressureMax?? null,
-            humidity:     o.humidityAvg        ?? null,
-            windSpeedMs:  o.metric?.windspeedAvg != null ? Math.round(o.metric.windspeedAvg/3.6*10)/10 : null,
-            windGustMs:   o.metric?.windgustHigh != null ? Math.round(o.metric.windgustHigh/3.6*10)/10 : null,
-            solarRad:     o.solarRadiationHigh ?? null,
-            uv:           o.uvHigh             ?? null,
-            _daily:       true,
-        }));
+            + `&date=${ymd}&apiKey=${key}`;
+        try {
+            const r = await fetch(url, {cache:"no-store"});
+            if(!r.ok) continue;
+            const d2 = await r.json();
+            if(d2?.observations?.length) allObs.push(...d2.observations.map(histParseObs));
+        } catch(e){ continue; }
     }
+
+    if(!allObs.length) throw new Error("Нет данных за выбранный период");
+    return allObs;
+}
 }
 
 /* =========================================================
