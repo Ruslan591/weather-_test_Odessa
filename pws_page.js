@@ -225,7 +225,20 @@ function renderPWSStation(p){
         <div class="pws-station-header">
             <div>
                 <div class="cardTitle" style="margin-bottom:2px;">${escapeHtml(cfg?.name||_currentId)}</div>
-                <div class="small" style="color:${timeAgeColor(p.obsTimeLocal)};">${escapeHtml(cfg?.name||_currentId)} · ${escapeHtml(timeStr)}</div>
+                <div style="
+    display:inline-block;
+    margin-top:4px;
+    padding:3px 10px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:600;
+    background:${timeAgeColor(p.obsTimeLocal)}22;
+    border:1px solid ${timeAgeColor(p.obsTimeLocal)}66;
+    color:${timeAgeColor(p.obsTimeLocal)};
+">
+    ${escapeHtml(timeStr)}
+    ${(()=>{const d=new Date((p.obsTimeLocal||"").replace(" ","T")); const m=Math.round((Date.now()-d)/60000); return isNaN(m)?"":`· ${m} мин назад`;})()}
+</div>
             </div>
             <div style="font-size:28px;font-weight:800;color:${tempColorExact(p.temp)};">${fmt1(p.temp,"°C")}</div>
         </div>
