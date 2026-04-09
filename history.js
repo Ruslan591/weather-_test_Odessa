@@ -172,7 +172,7 @@ function histPrepare(obs, paramKey){
    РЕНДЕР uPlot
 ========================================================= */
 function histRenderChart(data, paramKey){
-    if(paramKey === "winddir" || paramKey === "windDir") return histRenderChart_WindDir(data);
+    if(paramKey === "winddir") return histRenderChart_WindDir(data);
     const engine = (typeof HIST_ENGINE !== "undefined") ? HIST_ENGINE : "uplot";
     if(engine === "svg")    return histRenderChart_SVG(data, paramKey);
     if(engine === "chartjs") return histRenderChart_ChartJS(data, paramKey);
@@ -784,7 +784,7 @@ function histRenderStats(data, paramKey){
     if(!vals.length){ box.innerHTML = ""; return; }
 
     // Специальная статистика для направления ветра
-    if(paramKey === "winddir" || paramKey === "windDir"){){
+    if(paramKey === "winddir"){
         // Считаем доминирующий румб
         const rumbCounts = {};
         const rumbs = ["С","ССВ","СВ","ВСВ","В","ВЮВ","ЮВ","ЮЮВ","Ю","ЮЮЗ","ЮЗ","ЗЮЗ","З","ЗСЗ","СЗ","ССЗ"];
