@@ -14,8 +14,6 @@ const PWS_STATIONS = [
     { id:"IODESS16", name:"Таирова"          },
     { id:"IODESS31", name:"Савиньон"        },
     { id:"IODESS37", name:"Застава"          },
-
-
     { id:"IKRASN91", name:"пос.Степовое"  },
 ];
 
