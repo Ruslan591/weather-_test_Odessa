@@ -67,7 +67,7 @@ async function histFetch(stationId, period){
 
     if(period === "today"){
     const url = `https://api.weather.com/v2/pws/observations/all/1day`
-    + `?stationId=${encodeURIComponent(stationId)}&format=json&units=m&numericPrecision=decimal&apiKey=${key}&_t=${Date.now()}`;
+        + `?stationId=${encodeURIComponent(stationId)}&format=json&units=m&numericPrecision=decimal&apiKey=${key}`;
     const r = await fetch(url, {cache:"no-store"});
     if(!r.ok) throw new Error("HTTP " + r.status);
     const text = await r.text();
