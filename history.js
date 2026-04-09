@@ -12,7 +12,7 @@ const HIST_PARAMS = {
     pressure: { label:"Давление",     unit:" гПа",  color:"#58aeff", field:"pressure",    stroke:"#58aeff", fill:"rgba(88,174,255,0.10)"  },
     humidity: { label:"Влажность",    unit:"%",     color:"#5fe08f", field:"humidity",    stroke:"#5fe08f", fill:"rgba(95,224,143,0.10)"  },
     wind:     { label:"Ветер",        unit:" м/с",  color:"#ffd166", field:"windSpeedMs", stroke:"#ffd166", fill:"rgba(255,209,102,0.10)"  },
-    windDir:  { label:"Направление",  unit:"°",     color:"#74b9ff", field:"windDir",     stroke:"#74b9ff", fill:"rgba(116,185,255,0.10)", scatter:true },
+    winddir:  { label:"Направление",  unit:"°",     color:"#74b9ff", field:"windDir",     stroke:"#74b9ff", fill:"rgba(116,185,255,0.10)", scatter:true },
     precip:   { label:"Осадки",       unit:" мм",   color:"#448aff", field:"precip",      stroke:"#448aff", fill:"rgba(68,138,255,0.15)",  bar:true },
     solar:    { label:"Радиация",     unit:" Вт/м²",color:"#ff9f43", field:"solarRad",    stroke:"#ff9f43", fill:"rgba(255,159,67,0.10)"   },
     uv:       { label:"УФ-индекс",    unit:"",      color:"#a29bfe", field:"uv",          stroke:"#a29bfe", fill:"rgba(162,155,254,0.10)"  },
