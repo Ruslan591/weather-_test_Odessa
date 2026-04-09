@@ -6,12 +6,16 @@
 ========================================================= */
 
 const PWS_STATIONS = [
-    { id:"IODESA138",  name:"Центр"           },
-    { id:"IODESS16", name:"Таирова"          },
-    { id:"IODESS44", name:"Аркадия"          },
-    { id:"IODESS37", name:"Застава"          },
     { id:"IODESA137", name:"пос. Котовского"  },
-    { id:"IODESS31", name:"Савиньон"  },
+    { id:"IODESA138", name:"Центр"           },
+    { id:"IODESA139", name:"Чудо Город"          },
+    { id:"IODESS41", name:"Судостроительная"          },
+    { id:"IODESS44", name:"Аркадия"          },
+    { id:"IODESS16", name:"Таирова"          },
+    { id:"IODESS31", name:"Савиньон"        },
+    { id:"IODESS37", name:"Застава"          },
+
+
     { id:"IKRASN91", name:"пос.Степовое"  },
 ];
 
