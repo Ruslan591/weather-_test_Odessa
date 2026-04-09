@@ -840,10 +840,8 @@ function histRenderStats(data, paramKey){
 
     // Специальная статистика для направления ветра
     if(paramKey === "winddir"){
-        const rumbs = ["С","ССВ","СВ","ВСВ","В","ВЮВ","ЮВ","ЮЮВ","Ю","ЮЮЗ","ЮЗ","ЗЮЗ","З","ЗСЗ","СЗ","ССЗ"];
-        const dirs8  = ["С","СВ","В","ЮВ","Ю","ЮЗ","З","СЗ"];
+        const dirs8 = ["С","СВ","В","ЮВ","Ю","ЮЗ","З","СЗ"];
 
-        // Доминирующий (8 румбов)
         const rumbCounts = {};
         vals.forEach(v => {
             const r = dirs8[Math.round(((v % 360) + 360) % 360 / 45) % 8];
@@ -851,17 +849,16 @@ function histRenderStats(data, paramKey){
         });
         const dominant = Object.entries(rumbCounts).sort((a,b) => b[1]-a[1])[0] || ["-", 0];
 
-        // Среднее направление через векторное суммирование
         let sinSum = 0, cosSum = 0;
         vals.forEach(v => { sinSum += Math.sin(v * Math.PI/180); cosSum += Math.cos(v * Math.PI/180); });
         const meanDeg = ((Math.atan2(sinSum/vals.length, cosSum/vals.length) * 180/Math.PI) + 360) % 360;
         const meanRumb = dirs8[Math.round(meanDeg / 45) % 8];
 
-        // Средняя и макс скорость ветра из obs
         const spdVals = data.obs.map(o => o.windSpeedMs).filter(v => v != null);
-        const avgSpd = spdVals.length ? spdVals.reduce((a,b)=>a+b,0)/spdVals.length : null;
-        const maxSpd = spdVals.length ? Math.max(...spdVals) : null;
+        const avgSpd  = spdVals.length ? spdVals.reduce((a,b)=>a+b,0)/spdVals.length : null;
+        const maxSpd  = spdVals.length ? Math.max(...spdVals) : null;
 
+        // Те же 4 карточки что и в forecast.html
         box.innerHTML = `
         <div class="hist-stats-grid">
             <div class="hist-stat-card">
