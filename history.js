@@ -737,7 +737,7 @@ function histRenderChart_ECharts(data, paramKey){
             data: seriesData,
             smooth: 0.3,
             smoothMonotone: "x",
-            symbol: times.length < 60 ? "circle" : "none",
+            symbol: "none",
             symbolSize: 4,
             lineStyle: { color: cfg.stroke, width: 2 },
             itemStyle: { color: cfg.stroke },
