@@ -888,69 +888,86 @@ function histRenderStats(data, paramKey){
 
     // Специальная статистика для осадков
     if(paramKey === "precip"){
-        // Сумма за период
-        const precipRates = data.obs.map(o => o.precipRate ?? 0);
-        const precipTotals = data.obs.map(o => o.precip ?? null);
-        
-        // Для "сегодня" и "custom" — берём последний precipTotal
-        // Для 7д/месяц (дневные агрегаты) — суммируем precip
+        // Норма осадков Одесса, ст. 33837 (pogodaiklimat.ru), мм по месяцам
+        const ODESSA_PRECIP_NORM = [43, 35, 34, 28, 39, 48, 45, 40, 42, 37, 39, 36];
+
         const isDaily = data.obs.some(o => o._daily);
+
+        // Сумма за период
         let totalSum = null;
         if(isDaily){
-            const dayTotals = data.obs.map(o => o.precip ?? 0);
-            totalSum = dayTotals.reduce((a,b) => a+b, 0);
+            totalSum = data.obs.map(o => o.precip ?? 0).reduce((a,b) => a+b, 0);
         } else {
-            const lastTotal = [...precipTotals].reverse().find(v => v != null);
+            const lastTotal = [...data.obs.map(o => o.precip ?? null)].reverse().find(v => v != null);
             totalSum = lastTotal ?? 0;
         }
 
-        // Пик интенсивности (precipRate = мм/ч)
-        const rateVals = data.obs.map(o => o.precipRate ?? 0).filter(v => v > 0);
-        const peakRate = rateVals.length ? Math.max(...rateVals) : null;
-
-        // Дней/часов с осадками
-        let wetLabel = "", wetValue = "";
-        if(isDaily){
-            const wetDays = data.obs.filter(o => (o.precip ?? 0) > 0).length;
-            wetLabel = "Дней с осадками";
-            wetValue = wetDays + " д.";
-        } else {
-            const wetObs = data.obs.filter(o => (o.precipRate ?? 0) > 0).length;
-            wetLabel = "Часов с осадками";
-            // Определяем шаг между замерами в минутах
-            if(data.obs.length > 1){
-                const t1 = new Date((data.obs[0].obsTimeLocal||"").replace(" ","T"));
-                const t2 = new Date((data.obs[1].obsTimeLocal||"").replace(" ","T"));
-                const stepMin = Math.round((t2 - t1) / 60000);
-                const durMin = wetObs * stepMin;
-                wetValue = durMin >= 60
-                    ? (durMin/60).toFixed(1) + " ч"
-                    : durMin + " мин";
-                wetLabel = "Часов с осадками"; // оставим лейбл
-            } else {
-                wetValue = wetObs + " замеров";
-            }
-        }
-
-        // Продолжительность — то же что wetValue но отдельная карточка
-        // Считаем через шаг замеров
-        let durStr = "—";
-        if(!isDaily && data.obs.length > 1){
-            const wetCount = data.obs.filter(o => (o.precipRate ?? 0) > 0).length;
+        // Шаг между замерами в минутах
+        const stepMin = data.obs.length > 1 ? (() => {
             const t1 = new Date((data.obs[0].obsTimeLocal||"").replace(" ","T"));
             const t2 = new Date((data.obs[1].obsTimeLocal||"").replace(" ","T"));
-            const stepMin = Math.round(Math.abs(t2 - t1) / 60000) || 5;
-            const durMin = wetCount * stepMin;
-            durStr = durMin >= 60
-                ? Math.floor(durMin/60) + " ч " + (durMin%60 ? (durMin%60) + " мин" : "")
-                : durMin + " мин";
-        } else if(isDaily){
+            return Math.round(Math.abs(t2 - t1) / 60000) || 5;
+        })() : 5;
+        const stepHours = stepMin / 60;
+
+        // Вычисляем precipRate из разницы соседних precip
+        const computedRates = [];
+        for(let i = 1; i < data.obs.length; i++){
+            const diff = (data.obs[i].precip ?? 0) - (data.obs[i-1].precip ?? 0);
+            computedRates.push(diff > 0 ? Math.round(diff / stepHours * 10) / 10 : 0);
+        }
+
+        // Пик интенсивности + время
+        let peakRate = null, peakTimeStr = "";
+        computedRates.forEach((r, i) => {
+            if(r > (peakRate ?? 0)){
+                peakRate = r;
+                const o = data.obs[i + 1];
+                if(o){
+                    const d = new Date((o.obsTimeLocal||"").replace(" ","T"));
+                    peakTimeStr = isNaN(d) ? "" : d.toLocaleString("ru-RU",{
+                        day:"2-digit", month:"2-digit",
+                        hour:"2-digit", minute:"2-digit"
+                    });
+                }
+            }
+        });
+
+        // Продолжительность
+        const wetCount = computedRates.filter(v => v > 0).length;
+        const durMin = wetCount * stepMin;
+        let durStr = "—";
+        if(isDaily){
             const wetDays = data.obs.filter(o => (o.precip ?? 0) > 0).length;
             durStr = wetDays + " д.";
+        } else if(durMin > 0){
+            durStr = durMin >= 60
+                ? Math.floor(durMin/60) + " ч " + (durMin % 60 ? (durMin % 60) + " мин" : "")
+                : durMin + " мин";
+        }
+
+        // % от нормы — только если период в пределах одного месяца
+        let normCard = "";
+        const months = [...new Set(data.obs.map(o => {
+            const d = new Date((o.obsTimeLocal||"").replace(" ","T"));
+            return isNaN(d) ? null : d.getMonth();
+        }).filter(m => m !== null))];
+
+        if(months.length === 1){
+            const norm = ODESSA_PRECIP_NORM[months[0]];
+            const pct  = totalSum != null ? Math.round(totalSum / norm * 100) : null;
+            normCard = `
+            <div class="hist-stat-card">
+                <div class="hist-stat-label">% от нормы</div>
+                <div class="hist-stat-value" style="color:${pct != null && pct >= 100 ? '#5fe08f' : cfg.color};">
+                    ${pct != null ? pct + "%" : "—"}
+                </div>
+                <div class="hist-stat-time">норма ${norm} мм</div>
+            </div>`;
         }
 
         box.innerHTML = `
-        <div class="hist-stats-grid">
+        <div class="hist-stats-grid${normCard ? "" : " hist-stats-grid-3"}">
             <div class="hist-stat-card">
                 <div class="hist-stat-label">Сумма за период</div>
                 <div class="hist-stat-value" style="color:${cfg.color};">${totalSum != null ? totalSum.toFixed(1) : "—"} мм</div>
@@ -959,18 +976,14 @@ function histRenderStats(data, paramKey){
             <div class="hist-stat-card">
                 <div class="hist-stat-label">Пик интенсивности</div>
                 <div class="hist-stat-value" style="color:${cfg.color};">${peakRate != null ? peakRate.toFixed(1) : "—"} мм/ч</div>
-                <div class="hist-stat-time">&nbsp;</div>
-            </div>
-            <div class="hist-stat-card">
-                <div class="hist-stat-label">${isDaily ? "Дней с осадками" : "С осадками"}</div>
-                <div class="hist-stat-value" style="color:#ccc;">${wetValue || "—"}</div>
-                <div class="hist-stat-time">&nbsp;</div>
+                <div class="hist-stat-time">${peakTimeStr || "&nbsp;"}</div>
             </div>
             <div class="hist-stat-card">
                 <div class="hist-stat-label">Продолжительность</div>
                 <div class="hist-stat-value" style="color:#ccc;">${durStr}</div>
                 <div class="hist-stat-time">&nbsp;</div>
             </div>
+            ${normCard}
         </div>`;
         return;
     }
