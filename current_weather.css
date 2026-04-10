@@ -894,3 +894,7 @@ details .details-body > div {
     font-size: 10px;
     color: #555;
 }
+
+.hist-stats-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
