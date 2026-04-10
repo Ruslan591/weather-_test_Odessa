@@ -1041,8 +1041,7 @@ async function histLoad(){
 
     try {
         const obs  = await histFetch(stationId, _histPeriod);
-        console.log("obs[0]:", JSON.stringify(obs[0]));
-console.log("obs sample precip fields:", obs.slice(0,5).map(o => ({ precip: o.precip, precipRate: o.precipRate })));
+        
         _histData  = histPrepare(obs, _histParam);
         histRenderChart(_histData, _histParam);
         histRenderStats(_histData, _histParam);
