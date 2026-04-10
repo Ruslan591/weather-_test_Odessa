@@ -885,6 +885,95 @@ function histRenderStats(data, paramKey){
         return;
     }
 
+    // Специальная статистика для осадков
+    if(paramKey === "precip"){
+        // Сумма за период
+        const precipRates = data.obs.map(o => o.precipRate ?? 0);
+        const precipTotals = data.obs.map(o => o.precip ?? null);
+        
+        // Для "сегодня" и "custom" — берём последний precipTotal
+        // Для 7д/месяц (дневные агрегаты) — суммируем precip
+        const isDaily = data.obs.some(o => o._daily);
+        let totalSum = null;
+        if(isDaily){
+            const dayTotals = data.obs.map(o => o.precip ?? 0);
+            totalSum = dayTotals.reduce((a,b) => a+b, 0);
+        } else {
+            const lastTotal = [...precipTotals].reverse().find(v => v != null);
+            totalSum = lastTotal ?? 0;
+        }
+
+        // Пик интенсивности (precipRate = мм/ч)
+        const rateVals = data.obs.map(o => o.precipRate ?? 0).filter(v => v > 0);
+        const peakRate = rateVals.length ? Math.max(...rateVals) : null;
+
+        // Дней/часов с осадками
+        let wetLabel = "", wetValue = "";
+        if(isDaily){
+            const wetDays = data.obs.filter(o => (o.precip ?? 0) > 0).length;
+            wetLabel = "Дней с осадками";
+            wetValue = wetDays + " д.";
+        } else {
+            const wetObs = data.obs.filter(o => (o.precipRate ?? 0) > 0).length;
+            wetLabel = "Часов с осадками";
+            // Определяем шаг между замерами в минутах
+            if(data.obs.length > 1){
+                const t1 = new Date((data.obs[0].obsTimeLocal||"").replace(" ","T"));
+                const t2 = new Date((data.obs[1].obsTimeLocal||"").replace(" ","T"));
+                const stepMin = Math.round((t2 - t1) / 60000);
+                const durMin = wetObs * stepMin;
+                wetValue = durMin >= 60
+                    ? (durMin/60).toFixed(1) + " ч"
+                    : durMin + " мин";
+                wetLabel = "Часов с осадками"; // оставим лейбл
+            } else {
+                wetValue = wetObs + " замеров";
+            }
+        }
+
+        // Продолжительность — то же что wetValue но отдельная карточка
+        // Считаем через шаг замеров
+        let durStr = "—";
+        if(!isDaily && data.obs.length > 1){
+            const wetCount = data.obs.filter(o => (o.precipRate ?? 0) > 0).length;
+            const t1 = new Date((data.obs[0].obsTimeLocal||"").replace(" ","T"));
+            const t2 = new Date((data.obs[1].obsTimeLocal||"").replace(" ","T"));
+            const stepMin = Math.round(Math.abs(t2 - t1) / 60000) || 5;
+            const durMin = wetCount * stepMin;
+            durStr = durMin >= 60
+                ? Math.floor(durMin/60) + " ч " + (durMin%60 ? (durMin%60) + " мин" : "")
+                : durMin + " мин";
+        } else if(isDaily){
+            const wetDays = data.obs.filter(o => (o.precip ?? 0) > 0).length;
+            durStr = wetDays + " д.";
+        }
+
+        box.innerHTML = `
+        <div class="hist-stats-grid">
+            <div class="hist-stat-card">
+                <div class="hist-stat-label">Сумма за период</div>
+                <div class="hist-stat-value" style="color:${cfg.color};">${totalSum != null ? totalSum.toFixed(1) : "—"} мм</div>
+                <div class="hist-stat-time">${data.obs.length} замеров</div>
+            </div>
+            <div class="hist-stat-card">
+                <div class="hist-stat-label">Пик интенсивности</div>
+                <div class="hist-stat-value" style="color:${cfg.color};">${peakRate != null ? peakRate.toFixed(1) : "—"} мм/ч</div>
+                <div class="hist-stat-time">&nbsp;</div>
+            </div>
+            <div class="hist-stat-card">
+                <div class="hist-stat-label">${isDaily ? "Дней с осадками" : "С осадками"}</div>
+                <div class="hist-stat-value" style="color:#ccc;">${wetValue || "—"}</div>
+                <div class="hist-stat-time">&nbsp;</div>
+            </div>
+            <div class="hist-stat-card">
+                <div class="hist-stat-label">Продолжительность</div>
+                <div class="hist-stat-value" style="color:#ccc;">${durStr}</div>
+                <div class="hist-stat-time">&nbsp;</div>
+            </div>
+        </div>`;
+        return;
+    }
+
     const vMin  = Math.min(...vals);
     const vMax  = Math.max(...vals);
     const vAvg  = vals.reduce((a,b)=>a+b,0) / vals.length;
