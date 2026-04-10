@@ -45,6 +45,7 @@ function histParseObs(o){
         windGustMs:   km(m.windgustHigh ?? m.windGust  ?? null),
         windDir:      o.winddirAvg  ?? o.winddir  ?? null,
         precip:       m.precipTotal ?? m.precipRate ?? null,
+        precipRate:   m.precipRate ?? null,
         solarRad:     o.solarRadiationHigh ?? o.solarRadiation ?? null,
         uv:           o.uvHigh      ?? o.uv       ?? null,
     };
