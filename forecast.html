@@ -407,37 +407,66 @@ function renderForecastChart(hours, times){
         ${card4}`;
     }
 
-    // Тултип по наведению на SVG
-    const svgEl = wrap.querySelector("svg");
-    if(svgEl){
-        svgEl.addEventListener("mousemove", e => {
-            const rect = svgEl.getBoundingClientRect();
-            const scaleX = W / rect.width;
-            const mx = (e.clientX - rect.left) * scaleX;
-            // Ищем ближайшую точку
-            let best = 0, bestDist = Infinity;
-            pts.forEach((p, i) => {
-                const dist = Math.abs(p.x - mx);
-                if(dist < bestDist){ bestDist = dist; best = i; }
-            });
-            fcShowTooltip(e, best, data, times, cfg);
+    /// Тултип по наведению на SVG
+const svgEl = wrap.querySelector("svg");
+if(svgEl){
+    // --- Перекрестие ---
+    const crossV = document.createElementNS("http://www.w3.org/2000/svg","line");
+    const crossH = document.createElementNS("http://www.w3.org/2000/svg","line");
+    const crossDot = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    [crossV, crossH].forEach(el => {
+        el.setAttribute("stroke","rgba(255,255,255,0.25)");
+        el.setAttribute("stroke-width","1");
+        el.setAttribute("stroke-dasharray","3 3");
+        el.style.display = "none";
+        svgEl.appendChild(el);
+    });
+    crossDot.setAttribute("r","4");
+    crossDot.setAttribute("fill", cfg.color);
+    crossDot.setAttribute("stroke","#121212");
+    crossDot.setAttribute("stroke-width","2");
+    crossDot.style.display = "none";
+    svgEl.appendChild(crossDot);
+
+    function moveCross(mx){
+        let best = 0, bestDist = Infinity;
+        pts.forEach((p, i) => {
+            const dist = Math.abs(p.x - mx);
+            if(dist < bestDist){ bestDist = dist; best = i; }
         });
-        svgEl.addEventListener("mouseleave", fcHideTooltip);
-        svgEl.addEventListener("touchmove", e => {
-            const touch = e.touches[0];
-            const rect = svgEl.getBoundingClientRect();
-            const scaleX = W / rect.width;
-            const mx = (touch.clientX - rect.left) * scaleX;
-            let best = 0, bestDist = Infinity;
-            pts.forEach((p, i) => {
-                const dist = Math.abs(p.x - mx);
-                if(dist < bestDist){ bestDist = dist; best = i; }
-            });
-            fcShowTooltip(touch, best, data, times, cfg);
-            e.preventDefault();
-        }, { passive: false });
-        svgEl.addEventListener("touchend", fcHideTooltip);
+        const p = pts[best];
+        crossV.setAttribute("x1", p.x); crossV.setAttribute("y1", pad.t);
+        crossV.setAttribute("x2", p.x); crossV.setAttribute("y2", pad.t + iH);
+        crossH.setAttribute("x1", pad.l); crossH.setAttribute("y1", p.y);
+        crossH.setAttribute("x2", pad.l + iW); crossH.setAttribute("y2", p.y);
+        crossDot.setAttribute("cx", p.x);
+        crossDot.setAttribute("cy", p.y);
+        [crossV, crossH, crossDot].forEach(el => el.style.display = "");
+        return best;
     }
+
+    svgEl.addEventListener("mousemove", e => {
+        const rect = svgEl.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * W / rect.width;
+        const best = moveCross(mx);
+        fcShowTooltip(e, best, data, times, cfg);
+    });
+    svgEl.addEventListener("mouseleave", () => {
+        [crossV, crossH, crossDot].forEach(el => el.style.display = "none");
+        fcHideTooltip();
+    });
+    svgEl.addEventListener("touchmove", e => {
+        const touch = e.touches[0];
+        const rect = svgEl.getBoundingClientRect();
+        const mx = (touch.clientX - rect.left) * W / rect.width;
+        const best = moveCross(mx);
+        fcShowTooltip(touch, best, data, times, cfg);
+        e.preventDefault();
+    }, { passive: false });
+    svgEl.addEventListener("touchend", () => {
+        [crossV, crossH, crossDot].forEach(el => el.style.display = "none");
+        fcHideTooltip();
+    });
 }
 
 // --- Wind Direction scatter chart ---
@@ -559,34 +588,59 @@ function renderForecastWindDir(hours, times){
 
     // Тултип
     const svgEl = wrap.querySelector("svg");
-    if(svgEl){
-        svgEl.addEventListener("mousemove", e => {
-            const rect = svgEl.getBoundingClientRect();
-            const scaleX = W / rect.width;
-            const mx = (e.clientX - rect.left) * scaleX;
-            let best = 0, bestDist = Infinity;
-            pts.forEach((p, i) => {
-                const dist = Math.abs(p.x - mx);
-                if(dist < bestDist){ bestDist = dist; best = i; }
-            });
-            fcShowTooltip(e, best, data, times, cfg);
+if(svgEl){
+    const crossV = document.createElementNS("http://www.w3.org/2000/svg","line");
+    const crossDot = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    crossV.setAttribute("stroke","rgba(255,255,255,0.25)");
+    crossV.setAttribute("stroke-width","1");
+    crossV.setAttribute("stroke-dasharray","3 3");
+    crossV.style.display = "none";
+    svgEl.appendChild(crossV);
+    crossDot.setAttribute("r","4");
+    crossDot.setAttribute("fill", cfg.color);
+    crossDot.setAttribute("stroke","#121212");
+    crossDot.setAttribute("stroke-width","2");
+    crossDot.style.display = "none";
+    svgEl.appendChild(crossDot);
+
+    function moveCrossWD(mx){
+        let best = 0, bestDist = Infinity;
+        pts.forEach((p, i) => {
+            const dist = Math.abs(p.x - mx);
+            if(dist < bestDist){ bestDist = dist; best = i; }
         });
-        svgEl.addEventListener("mouseleave", fcHideTooltip);
-        svgEl.addEventListener("touchmove", e => {
-            const touch = e.touches[0];
-            const rect = svgEl.getBoundingClientRect();
-            const scaleX = W / rect.width;
-            const mx = (touch.clientX - rect.left) * scaleX;
-            let best = 0, bestDist = Infinity;
-            pts.forEach((p, i) => {
-                const dist = Math.abs(p.x - mx);
-                if(dist < bestDist){ bestDist = dist; best = i; }
-            });
-            fcShowTooltip(touch, best, data, times, cfg);
-            e.preventDefault();
-        }, { passive: false });
-        svgEl.addEventListener("touchend", fcHideTooltip);
+        const p = pts[best];
+        crossV.setAttribute("x1", p.x); crossV.setAttribute("y1", pad.t);
+        crossV.setAttribute("x2", p.x); crossV.setAttribute("y2", pad.t + iH);
+        crossDot.setAttribute("cx", p.x);
+        crossDot.setAttribute("cy", p.y);
+        [crossV, crossDot].forEach(el => el.style.display = "");
+        return best;
     }
+
+    svgEl.addEventListener("mousemove", e => {
+        const rect = svgEl.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * W / rect.width;
+        const best = moveCrossWD(mx);
+        fcShowTooltip(e, best, data, times, cfg);
+    });
+    svgEl.addEventListener("mouseleave", () => {
+        [crossV, crossDot].forEach(el => el.style.display = "none");
+        fcHideTooltip();
+    });
+    svgEl.addEventListener("touchmove", e => {
+        const touch = e.touches[0];
+        const rect = svgEl.getBoundingClientRect();
+        const mx = (touch.clientX - rect.left) * W / rect.width;
+        const best = moveCrossWD(mx);
+        fcShowTooltip(touch, best, data, times, cfg);
+        e.preventDefault();
+    }, { passive: false });
+    svgEl.addEventListener("touchend", () => {
+        [crossV, crossDot].forEach(el => el.style.display = "none");
+        fcHideTooltip();
+    });
+}
 
     // Статистика — доминирующий румб через векторное суммирование
     if(statsBox){
