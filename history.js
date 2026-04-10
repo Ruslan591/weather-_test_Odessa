@@ -326,8 +326,8 @@ function histRenderChart_SVG(data, paramKey){
         const x = px(t);
         const d = new Date(t * 1000);
         const lbl = d.getDate() === new Date(times[0]*1000).getDate()
-            ? d.toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"})
-            : d.toLocaleDateString("ru-RU", {day:"2-digit", month:"2-digit"});
+    ? d.toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"})
+    : d.toLocaleDateString("ru-RU", {day:"2-digit", month:"2-digit", year:"numeric"});
         xLabels += `<line x1="${x}" y1="${pad.t}" x2="${x}" y2="${pad.t+iH}" stroke="#252525" stroke-width="1"/>`;
         xLabels += `<text x="${x}" y="${H-8}" text-anchor="middle" font-size="10" fill="#555">${lbl}</text>`;
     });
@@ -702,12 +702,12 @@ function histRenderChart_ECharts(data, paramKey){
             axisLabel: {
                 color: "#555", fontSize: 10,
                 formatter(val){
-                    const d = new Date(val);
-                    const sameDay = new Date(times[0]*1000).getDate() === d.getDate();
-                    return sameDay
-                        ? d.toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"})
-                        : d.toLocaleDateString("ru-RU", {day:"2-digit", month:"2-digit"});
-                }
+    const d = new Date(val);
+    const sameDay = new Date(times[0]*1000).getDate() === d.getDate();
+    return sameDay
+        ? d.toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"})
+        : d.toLocaleDateString("ru-RU", {day:"2-digit", month:"2-digit", year:"numeric"});
+}
             },
             splitLine: { lineStyle: { color: "#252525" } },
         },
