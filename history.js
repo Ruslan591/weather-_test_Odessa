@@ -735,7 +735,7 @@ function histRenderChart_ECharts(data, paramKey){
         series: [{
             type: "line",
             data: seriesData,
-            smooth: 0.3,
+            smooth: 0.6,
             smoothMonotone: "x",
             symbol: "none",
             symbolSize: 4,
