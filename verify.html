@@ -390,12 +390,8 @@ function fetchWithTimeout(url, ms = 10000){
 }
 
 function saveProxyTime(proxyTimes, proxy, ms, limit = 10) {
-    if (!proxyTimes[proxy]) {
-        proxyTimes[proxy] = [];
-    }
-
+    if (!proxyTimes[proxy]) proxyTimes[proxy] = [];
     proxyTimes[proxy].push(ms);
-
     if (proxyTimes[proxy].length > limit) {
         proxyTimes[proxy] = proxyTimes[proxy].slice(-limit);
     }
@@ -404,29 +400,94 @@ function saveProxyTime(proxyTimes, proxy, ms, limit = 10) {
 /* =========================================================
     ЗАГРУЗКА SYNOP
 ========================================================= */
-// ======== Сохранение времени работы прокси ========
-function saveProxyTime(proxyTimes, proxy, ms, limit = 10) {
-    if (!proxyTimes[proxy]) proxyTimes[proxy] = [];
-    proxyTimes[proxy].push(ms);
-    if (proxyTimes[proxy].length > limit) {
-        proxyTimes[proxy] = proxyTimes[proxy].slice(-limit);
+
+async function loadSynopAll() {
+    const stationCode = "33837";
+    const cacheBust = Date.now();
+    const ogimet = `https://www.ogimet.com/display_synops2.php?lang=en&lugar=${stationCode}&tipo=ALL&ord=REV&nil=SI&fmt=txt&ndays=10&_=${cacheBust}`;
+
+    const proxies = [
+        "https://api.allorigins.win/raw?url=",
+        "https://corsproxy.io/?",
+        "https://proxy.cors.sh/",
+        "https://cors.x2u.in/"
+    ];
+
+    const proxyStorageKey = "synopProxyTimes";
+    let proxyTimes = JSON.parse(localStorage.getItem(proxyStorageKey) || "{}");
+
+    const requests = proxies.map(proxy => new Promise(async (resolve, reject) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10000);
+        const started = performance.now();
+        try {
+            const url = proxy + encodeURIComponent(ogimet);
+            const r = await fetch(url, { signal: controller.signal, cache: "no-store" });
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            const text = await r.text();
+            if (!text || !text.trim()) throw new Error("Пустой ответ");
+            const ms = Math.round(performance.now() - started);
+            saveProxyTime(proxyTimes, proxy, ms);
+            resolve({ text, proxy, ms });
+        } catch (e) {
+            const ms = Math.round(performance.now() - started);
+            saveProxyTime(proxyTimes, proxy, ms);
+            reject(e);
+        } finally {
+            clearTimeout(timer);
+        }
+    }));
+
+    const settled = await Promise.allSettled(requests);
+    localStorage.setItem(proxyStorageKey, JSON.stringify(proxyTimes));
+
+    const successResults = settled
+        .filter(r => r.status === "fulfilled")
+        .map(r => r.value);
+
+    if (!successResults.length) throw new Error("Все прокси SYNOP не ответили");
+
+    // Выбираем самый длинный ответ (больше данных)
+    successResults.sort((a, b) => b.text.length - a.text.length);
+    const text = successResults[0].text;
+
+    return parseAllSynops(text);
+}
+
+function parseAllSynops(text) {
+    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+    const result = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const keyMatch = lines[i].match(/^(\d{12})\s+AAXX\b/);
+        if (!keyMatch) continue;
+
+        const telegramKey = keyMatch[1];
+
+        // Ищем строку с AAXX среди текущей и следующих строк
+        let synopLine = null;
+        for (let j = i; j < Math.min(i + 5, lines.length); j++) {
+            if (/AAXX\b/.test(lines[j])) {
+                synopLine = lines[j];
+                break;
+            }
+        }
+
+        if (!synopLine) continue;
+        if (synopLine.includes("NILL")) continue;
+
+        try {
+            const parsed = parseSynop(synopLine, telegramKey);
+            if (parsed && parsed.temp !== null) {
+                result.push({ telegramKey, synopLine, parsed });
+            }
+        } catch (e) {
+            console.log("Ошибка парсинга строки:", synopLine, e);
+        }
     }
+
+    return result;
 }
-
-// ======== Проверка IndexedDB ========
-async function recordExists(key) {
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction("stats", "readonly");
-        const store = tx.objectStore("stats");
-        const request = store.get(key);
-
-        request.onsuccess = () => resolve(!!request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
-
-// ======== Основная функция загрузки SYNOP ========
-loadSynopAll()
 
 function parseSynop(line, telegramKey) {
     const parts = line.trim().split(" ");
@@ -933,10 +994,6 @@ async function autoUpdate() {
 // первый запуск сразу
 autoUpdate();
 </script>  
-<script>
-if
-//alert('SW registered');
-  
-</script>
+
 </body>  
 </html>  
