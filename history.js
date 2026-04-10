@@ -235,7 +235,7 @@ function histRenderChart_uPlot(data, paramKey){
                 fill:         cfg.fill,
                 width:        2,
                 spanGaps:     false,
-                points:       { show: times.length < 60 },
+                points: { show: false },
             },
         ],
         hooks: {
