@@ -60,5 +60,43 @@
 
     waitForUplot(() => initHistorySection());
 </script>
+
+<!-- Фоновая подгрузка пропущенных сводок -->
+<script>
+(async function() {
+    // Подключаем IndexedDB и функции из verify.html минимально
+    // Просто тихий фоновый запрос без UI
+    try {
+        // Открываем ту же БД
+        const db = await new Promise((resolve, reject) => {
+            const req = indexedDB.open("modelStats", 1);
+            req.onupgradeneeded = e => {
+                e.target.result.createObjectStore("stats", { keyPath: "time" });
+            };
+            req.onsuccess = e => resolve(e.target.result);
+            req.onerror = reject;
+        });
+
+        // Последнее фоновое обновление
+        const lastBg = localStorage.getItem("lastBgUpdate");
+        const now = Date.now();
+        // Не чаще раза в 3 часа с других страниц
+        if (lastBg && now - Number(lastBg) < 3 * 3600 * 1000) return;
+        localStorage.setItem("lastBgUpdate", now);
+
+        // Перенаправляем на verify.html в скрытом iframe
+        // (он сам запустит autoUpdate)
+        const iframe = document.createElement("iframe");
+        iframe.src = "verify.html";
+        iframe.style.cssText = "display:none;width:0;height:0;border:0";
+        document.body.appendChild(iframe);
+        // Убираем iframe через 60 сек
+        setTimeout(() => iframe.remove(), 60000);
+    } catch(e) {
+        console.log("BG update error:", e);
+    }
+})();
+</script>
+
 </body>
 </html>
