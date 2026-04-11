@@ -162,6 +162,8 @@ return true;
 
 });
 
+stats.sort((a, b) => a.synopTime.localeCompare(b.synopTime));
+
 if(!stats.length) return;
 
 const labels = stats.map(d => {
@@ -723,6 +725,8 @@ if(currentPeriod === "3d") return now - t <= 3*24*3600*1000;
 return true;
 
 });
+
+stats.sort((a, b) => a.synopTime.localeCompare(b.synopTime));
 
 if(!stats.length){
 document.getElementById("rating").innerHTML =
